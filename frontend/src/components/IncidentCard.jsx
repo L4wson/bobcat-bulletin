@@ -1,9 +1,10 @@
+import { MapPin, Clock, Hash, CheckCircle } from "lucide-react";
 import { getCategoryStyle } from "../lib/categories.js";
 
 function formatDate(iso) {
   if (!iso) return "";
   const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
 export default function IncidentCard({ incident }) {
@@ -11,49 +12,51 @@ export default function IncidentCard({ incident }) {
 
   return (
     <div
-      className="term-card px-4 py-3 group"
-      style={{ borderLeftWidth: "2px", borderLeftColor: style.dot }}
+      className="card p-4 hover:border-slate-500 transition-colors duration-150 group"
+      style={{ borderLeftWidth: "3px", borderLeftColor: style.dot }}
     >
-      {/* Row 1: category + date/time */}
-      <div className="flex items-center justify-between gap-2 mb-2">
+      {/* Top row: category badge + date/time */}
+      <div className="flex items-start justify-between gap-2 mb-2">
         <span
-          className="term-badge text-xs tracking-widest"
-          style={{ color: style.text, borderColor: style.border, background: style.bg }}
+          className={`badge ${style.bg} ${style.text} border ${style.border}`}
         >
-          [{incident.category.toUpperCase()}]
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: style.dot }} />
+          {incident.category}
         </span>
-        <span className="text-term-dim text-xs font-mono tracking-wide shrink-0">
-          {formatDate(incident.date)} {incident.time}
-        </span>
+
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono shrink-0">
+          <span>{formatDate(incident.date)}</span>
+          <span className="text-slate-600">·</span>
+          <Clock size={11} />
+          <span>{incident.time}</span>
+        </div>
       </div>
 
-      {/* Row 2: incident type */}
-      <div
-        className="text-term-bright text-sm tracking-wide mb-2 group-hover:glow transition-all"
-        style={{ textShadow: "0 0 4px rgba(255,153,0,0.4)" }}
-      >
-        &gt; {incident.incident_type.toUpperCase()}
-      </div>
+      {/* Incident type */}
+      <h3 className="text-sm font-semibold text-slate-100 mb-1.5 group-hover:text-white transition-colors">
+        {incident.incident_type}
+      </h3>
 
       {/* Location */}
       {incident.location && (
-        <div className="text-term-base text-xs leading-snug mb-1 tracking-wide">
-          LOC: {incident.location}
+        <div className="flex items-start gap-1.5 text-xs text-slate-400 mb-1.5">
+          <MapPin size={12} className="shrink-0 mt-0.5 text-slate-500" />
+          <span className="leading-snug">{incident.location}</span>
         </div>
       )}
 
       {/* Disposition */}
       {incident.disposition && (
-        <div className="text-term-dim text-xs tracking-wide mb-2">
-          DISP: {incident.disposition.toUpperCase()}
+        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <CheckCircle size={11} className="shrink-0 text-slate-600" />
+          <span>{incident.disposition}</span>
         </div>
       )}
 
       {/* Case number */}
-      <div className="border-t border-term-muted pt-2 mt-2">
-        <span className="text-term-muted text-xs font-mono tracking-widest">
-          RPT# {incident.case_number}
-        </span>
+      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-surface-600">
+        <Hash size={10} className="text-slate-600" />
+        <span className="text-xs font-mono text-slate-600">{incident.case_number}</span>
       </div>
     </div>
   );

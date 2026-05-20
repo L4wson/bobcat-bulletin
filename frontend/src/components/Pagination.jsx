@@ -5,30 +5,32 @@ export default function Pagination({ page, pages, total, perPage, onChange }) {
   const to = Math.min(page * perPage, total);
 
   return (
-    <div className="flex items-center justify-between text-xs font-mono tracking-wide border-t border-term-border pt-4">
-      <span className="text-term-dim">
-        SHOWING {from.toLocaleString()}–{to.toLocaleString()} OF {total.toLocaleString()} RECORDS
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-slate-500 text-xs font-mono">
+        {from}–{to} of {total.toLocaleString()} incidents
       </span>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           onClick={() => onChange(page - 1)}
           disabled={page <= 1}
-          className="term-btn py-1 px-2 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="btn bg-surface-700 border border-surface-500 text-slate-400
+                     hover:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <ChevronLeft size={13} /> PREV
+          <ChevronLeft size={14} />
         </button>
 
-        <span className="text-term-base px-3 border border-term-border py-1">
+        <span className="px-3 py-1.5 bg-surface-700 border border-surface-500 rounded text-slate-300 font-mono text-xs">
           {page} / {pages}
         </span>
 
         <button
           onClick={() => onChange(page + 1)}
           disabled={page >= pages}
-          className="term-btn py-1 px-2 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="btn bg-surface-700 border border-surface-500 text-slate-400
+                     hover:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          NEXT <ChevronRight size={13} />
+          <ChevronRight size={14} />
         </button>
       </div>
     </div>
