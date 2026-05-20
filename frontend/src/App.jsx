@@ -6,6 +6,7 @@ import StatsBar from "./components/StatsBar.jsx";
 import FilterBar from "./components/FilterBar.jsx";
 import IncidentCard from "./components/IncidentCard.jsx";
 import Pagination from "./components/Pagination.jsx";
+import FeedbackModal from "./components/FeedbackModal.jsx";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 const DEFAULT_FILTERS = {
@@ -21,6 +22,7 @@ const PER_PAGE = 50;
 
 export default function App() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const { data: stats } = useQuery({ queryKey: ["stats"], queryFn: getStats });
 
@@ -111,18 +113,30 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-surface-600 mt-12 py-6 text-center text-xs text-slate-600 font-mono">
-        Data sourced from{" "}
-        <a
-          href="https://police.ucmerced.edu/daily-activity-logs"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-slate-500 hover:text-slate-300 underline"
-        >
-          UC Merced Police Department
-        </a>
-        . Not affiliated with or endorsed by UCMPD.
+      <footer className="border-t border-surface-600 mt-12 py-6 text-center text-xs text-slate-600 font-mono space-y-1.5">
+        <div>
+          Data sourced from{" "}
+          <a
+            href="https://police.ucmerced.edu/daily-activity-logs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-slate-300 underline"
+          >
+            UC Merced Police Department
+          </a>
+          . Not affiliated with or endorsed by UCMPD.
+        </div>
+        <div>
+          <button
+            onClick={() => setShowFeedback(true)}
+            className="text-slate-500 hover:text-slate-300 underline transition-colors"
+          >
+            Suggestions · Questions · Request data removal
+          </button>
+        </div>
       </footer>
+
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
     </div>
   );
 }
