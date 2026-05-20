@@ -1,9 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Analytics } from "@vercel/analytics/react";
+import { inject } from "@vercel/analytics";
 import App from "./App.jsx";
 import "./index.css";
+
+inject({ mode: "production" });
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,6 +21,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
-    <Analytics debug={false} />
   </React.StrictMode>
 );
