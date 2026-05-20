@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Paw pad -->
+  <ellipse cx="16" cy="20" rx="7" ry="6" fill="#FDB71A"/>
+  <!-- Toe beans -->
+  <ellipse cx="9"  cy="13" rx="3" ry="2.5" fill="#FDB71A"/>
+  <ellipse cx="14" cy="11" rx="3" ry="2.5" fill="#FDB71A"/>
+  <ellipse cx="19" cy="11" rx="3" ry="2.5" fill="#FDB71A"/>
+  <ellipse cx="24" cy="13" rx="3" ry="2.5" fill="#FDB71A"/>
+</svg>
