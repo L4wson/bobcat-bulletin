@@ -29,6 +29,7 @@ export default function Header({ lastUpdated }) {
     : null;
 
   return (
+    <>
     <header className="sticky top-0 z-40 bg-surface-800/90 backdrop-blur border-b border-surface-500">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo / Title */}
@@ -71,5 +72,6 @@ export default function Header({ lastUpdated }) {
     </header>
 
     {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+    </>
   );
 }
