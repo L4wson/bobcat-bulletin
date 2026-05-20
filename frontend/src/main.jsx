@@ -19,6 +19,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
-    <Analytics debug={import.meta.env.DEV} />
+    <Analytics debug={false} />
   </React.StrictMode>
 );
