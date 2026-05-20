@@ -6,7 +6,7 @@ import StatsBar from "./components/StatsBar.jsx";
 import FilterBar from "./components/FilterBar.jsx";
 import IncidentCard from "./components/IncidentCard.jsx";
 import Pagination from "./components/Pagination.jsx";
-import FeedbackModal from "./components/FeedbackModal.jsx";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 const DEFAULT_FILTERS = {
   category: "",
@@ -21,21 +21,21 @@ const PER_PAGE = 50;
 
 export default function App() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [showFeedback, setShowFeedback] = useState(false);
 
   const { data: stats } = useQuery({ queryKey: ["stats"], queryFn: getStats });
 
+  const queryKey = ["incidents", filters];
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["incidents", filters],
+    queryKey,
     queryFn: () =>
       getIncidents({
-        category:     filters.category,
-        search:       filters.search,
-        start_date:   filters.start_date,
-        end_date:     filters.end_date,
+        category: filters.category,
+        search: filters.search,
+        start_date: filters.start_date,
+        end_date: filters.end_date,
         exclude_type: filters.exclude_types,
-        page:         filters.page,
-        per_page:     PER_PAGE,
+        page: filters.page,
+        per_page: PER_PAGE,
       }),
     keepPreviousData: true,
   });
@@ -45,107 +45,96 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  return (
-    <div className="min-h-screen bg-term-bg relative animate-flicker">
-      {/* CRT scanlines + vignette overlay */}
-      <div className="crt-overlay" aria-hidden="true" />
+  function handlePageChange(nextPage) {
+    handleFiltersChange({ ...filters, page: nextPage });
+  }
 
+  return (
+    <div className="min-h-screen bg-surface-900">
       <Header lastUpdated={stats?.last_updated} />
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <StatsBar />
 
-        <div className="border-t border-term-muted pt-6">
-          <FilterBar filters={filters} onChange={handleFiltersChange} />
-        </div>
+        <FilterBar filters={filters} onChange={handleFiltersChange} />
 
-        {/* Results */}
-        <div className="border-t border-term-muted pt-4">
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center py-20 text-term-dim">
-              <div
-                className="text-term-bright glow mb-2 cursor"
-                style={{ fontFamily: "VT323, monospace", fontSize: "1.5rem" }}
-              >
-                LOADING
+        {/* Results area */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+            <Loader2 size={32} className="animate-spin mb-3 text-ucgold" />
+            <p className="text-sm">Loading incidents…</p>
+          </div>
+        )}
+
+        {isError && (
+          <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            <AlertCircle size={16} className="shrink-0" />
+            Failed to load incidents. Is the backend running?
+          </div>
+        )}
+
+        {data && !isLoading && (
+          <>
+            {data.incidents.length === 0 ? (
+              <div className="text-center py-20 text-slate-500">
+                <p className="text-lg mb-1">No incidents found</p>
+                <p className="text-sm">Try adjusting your filters</p>
               </div>
-              <p className="text-xs tracking-widest">ACCESSING DATABASE...</p>
-            </div>
-          )}
-
-          {isError && (
-            <div className="border border-term-border px-4 py-3 text-term-base text-xs tracking-wide">
-              &gt; ERROR: FAILED TO RETRIEVE DATA. IS THE BACKEND TERMINAL ONLINE?
-            </div>
-          )}
-
-          {data && !isLoading && (
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-term-dim text-xs tracking-widest prompt">
-                  QUERY RESULTS
-                </span>
-                <span className="text-term-dim text-xs font-mono">
-                  {data.total.toLocaleString()} RECORDS FOUND
-                </span>
-              </div>
-
-              {data.incidents.length === 0 ? (
-                <div className="text-center py-20">
-                  <div className="text-term-dim text-xs tracking-widest">
-                    &gt; NO RECORDS MATCH QUERY PARAMETERS
-                  </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {data.incidents.map((inc) => (
+                    <IncidentCard key={inc.id} incident={inc} />
+                  ))}
                 </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                    {data.incidents.map((inc) => (
-                      <IncidentCard key={inc.id} incident={inc} />
-                    ))}
-                  </div>
 
-                  {data.pages > 1 && (
-                    <div className="mt-4">
-                      <Pagination
-                        page={data.page}
-                        pages={data.pages}
-                        total={data.total}
-                        perPage={PER_PAGE}
-                        onChange={(p) => handleFiltersChange({ ...filters, page: p })}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </div>
+                {data.pages > 1 && (
+                  <Pagination
+                    page={data.page}
+                    pages={data.pages}
+                    total={data.total}
+                    perPage={PER_PAGE}
+                    onChange={handlePageChange}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* Backend loading state — no data yet */}
+        {!isLoading && !isError && !data && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+            <Loader2 size={32} className="animate-spin mb-3 text-ucgold" />
+            <p className="text-sm">Connecting to backend…</p>
+          </div>
+        )}
       </main>
 
-      <footer className="border-t border-term-border mt-12 py-5 text-center text-xs text-term-muted font-mono tracking-widest space-y-1.5">
-        <div>
-          DATA SOURCE:{" "}
+      <footer className="border-t border-surface-600 mt-12 py-6 font-mono">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+          <span>
+            Data sourced from{" "}
+            <a
+              href="https://police.ucmerced.edu/daily-activity-logs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-500 hover:text-slate-300 underline"
+            >
+              UC Merced Police Department
+            </a>
+            . Not affiliated with or endorsed by UCMPD.
+          </span>
           <a
-            href="https://police.ucmerced.edu/daily-activity-logs"
+            href="https://github.com/L4wson/bobcat-bulletin/issues/new/choose"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-term-dim hover:text-term-base underline transition-colors"
+            className="text-slate-500 hover:text-slate-300 underline whitespace-nowrap"
           >
-            UC MERCED POLICE DEPARTMENT
+            Suggestions · Questions · Request removal
           </a>
-          {" "}// NOT AFFILIATED WITH UCMPD
-        </div>
-        <div>
-          <button
-            onClick={() => setShowFeedback(true)}
-            className="text-term-dim hover:text-term-base underline transition-colors tracking-widest"
-          >
-            SUGGESTIONS · QUESTIONS · REQUEST DATA REMOVAL
-          </button>
         </div>
       </footer>
-
-      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
     </div>
   );
 }
