@@ -4,45 +4,150 @@
 
 @layer base {
   html {
-    @apply bg-surface-900 text-slate-200;
-    font-family: "Inter", system-ui, sans-serif;
+    background-color: #090500;
+    color: #cc7722;
+    font-family: "Share Tech Mono", "Courier New", monospace;
+    font-size: 14px;
   }
 
-  * {
-    @apply border-surface-500;
+  /* CRT flicker on the whole page */
+  body {
+    animation: flicker 10s infinite;
+    background-color: #090500;
+    min-height: 100vh;
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
+  @keyframes flicker {
+    0%,100% { opacity: 1; }
+    92%     { opacity: 1; }
+    93%     { opacity: 0.96; }
+    94%     { opacity: 1; }
+    96%     { opacity: 0.98; }
+    97%     { opacity: 1; }
   }
-  ::-webkit-scrollbar-track {
-    @apply bg-surface-800;
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0; }
   }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-surface-500 rounded-full;
-  }
+
+  ::-webkit-scrollbar       { width: 6px; }
+  ::-webkit-scrollbar-track { background: #090500; }
+  ::-webkit-scrollbar-thumb { background: #3a1e00; border-radius: 0; }
+
+  ::selection { background: #cc7722; color: #090500; }
+
+  input, textarea, button { font-family: inherit; }
 }
 
 @layer components {
-  .badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium font-mono;
+  /* ── Scanlines overlay ───────────────────────────────── */
+  .crt-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    /* horizontal scanlines */
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.18) 0px,
+      rgba(0, 0, 0, 0.18) 1px,
+      transparent        1px,
+      transparent        3px
+    );
   }
 
-  .card {
-    @apply bg-surface-700 border border-surface-500 rounded-lg;
+  /* CRT vignette */
+  .crt-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 55%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
   }
 
-  .btn {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium
-           transition-colors duration-150 cursor-pointer;
+  /* ── Phosphor text glow ──────────────────────────────── */
+  .glow {
+    text-shadow:
+      0 0 4px  rgba(255, 153, 0, 0.9),
+      0 0 10px rgba(255, 153, 0, 0.6),
+      0 0 20px rgba(255, 153, 0, 0.3);
   }
 
-  .filter-chip {
-    @apply btn border border-surface-500 text-slate-400
-           hover:border-slate-500 hover:text-slate-200;
+  .glow-sm {
+    text-shadow:
+      0 0 3px rgba(255, 153, 0, 0.7),
+      0 0 8px rgba(255, 153, 0, 0.4);
   }
 
-  .filter-chip.active {
-    @apply border-ucgold text-ucgold bg-ucgold/10;
+  /* ── Terminal card ───────────────────────────────────── */
+  .term-card {
+    @apply bg-term-card border border-term-border;
+    position: relative;
+    transition: border-color 150ms;
+  }
+
+  .term-card:hover {
+    border-color: #7a4500;
+  }
+
+  /* ── Terminal input ──────────────────────────────────── */
+  .term-input {
+    @apply bg-term-bg border border-term-border text-term-bright
+           placeholder-term-muted focus:outline-none font-mono;
+    transition: border-color 150ms;
+  }
+
+  .term-input:focus {
+    border-color: #cc7722;
+    box-shadow: 0 0 0 1px rgba(204, 119, 34, 0.3);
+  }
+
+  /* ── Terminal button ─────────────────────────────────── */
+  .term-btn {
+    @apply inline-flex items-center gap-2 px-3 py-1.5
+           border border-term-border text-term-base font-mono text-sm
+           cursor-pointer;
+    transition: border-color 150ms, color 150ms, background 150ms;
+  }
+
+  .term-btn:hover {
+    border-color: #cc7722;
+    color: #ff9900;
+    background: rgba(204, 119, 34, 0.08);
+  }
+
+  /* ── Terminal chip ───────────────────────────────────── */
+  .term-chip {
+    @apply term-btn text-term-dim;
+  }
+
+  .term-chip.active {
+    border-color: #ff9900;
+    color: #ff9900;
+    background: rgba(255, 153, 0, 0.1);
+    text-shadow: 0 0 6px rgba(255, 153, 0, 0.5);
+  }
+
+  /* ── Terminal badge ──────────────────────────────────── */
+  .term-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           border text-xs font-mono;
+  }
+
+  /* ── Blinking cursor ─────────────────────────────────── */
+  .cursor::after {
+    content: '█';
+    animation: blink 1.2s step-end infinite;
+    color: #ff9900;
+  }
+
+  /* ── Section prompt ──────────────────────────────────── */
+  .prompt::before {
+    content: '> ';
+    color: #ff9900;
   }
 }

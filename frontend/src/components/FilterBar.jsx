@@ -28,24 +28,23 @@ export default function FilterBar({ filters, onChange }) {
   return (
     <div className="space-y-3">
       {/* Search + date row */}
+      <div className="text-term-dim text-xs tracking-widest mb-1 prompt">SEARCH PARAMETERS</div>
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-term-dim" />
           <input
             type="text"
             value={filters.search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search incidents, locations, report #…"
-            className="w-full bg-surface-700 border border-surface-500 rounded pl-9 pr-3 py-2 text-sm
-                       text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-400
-                       font-mono transition-colors"
+            placeholder="SEARCH INCIDENTS, LOCATIONS, REPORT #..."
+            className="term-input w-full pl-9 pr-8 py-2 text-xs tracking-wide rounded-none"
           />
           {filters.search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-term-dim hover:text-term-bright"
             >
-              <X size={13} />
+              <X size={12} />
             </button>
           )}
         </div>
@@ -55,26 +54,25 @@ export default function FilterBar({ filters, onChange }) {
             type="date"
             value={filters.start_date}
             onChange={(e) => onChange({ ...filters, start_date: e.target.value, page: 1 })}
-            className="bg-surface-700 border border-surface-500 rounded px-3 py-2 text-sm text-slate-300
-                       focus:outline-none focus:border-slate-400 font-mono transition-colors"
+            className="term-input px-3 py-2 text-xs rounded-none"
           />
           <input
             type="date"
             value={filters.end_date}
             onChange={(e) => onChange({ ...filters, end_date: e.target.value, page: 1 })}
-            className="bg-surface-700 border border-surface-500 rounded px-3 py-2 text-sm text-slate-300
-                       focus:outline-none focus:border-slate-400 font-mono transition-colors"
+            className="term-input px-3 py-2 text-xs rounded-none"
           />
         </div>
       </div>
 
-      {/* Category chips */}
-      <div className="flex flex-wrap gap-2 items-center">
+      {/* Category filter */}
+      <div className="text-term-dim text-xs tracking-widest mb-1 prompt">FILTER BY CATEGORY</div>
+      <div className="flex flex-wrap gap-1.5 items-center">
         <button
           onClick={() => setCategory("")}
-          className={`filter-chip ${!filters.category ? "active" : ""}`}
+          className={`term-chip text-xs tracking-widest ${!filters.category ? "active" : ""}`}
         >
-          All
+          [ALL]
         </button>
 
         {categories.map((cat) => {
@@ -84,31 +82,30 @@ export default function FilterBar({ filters, onChange }) {
             <button
               key={cat.name}
               onClick={() => setCategory(cat.name)}
-              className={`filter-chip relative ${active ? "active" : ""}`}
+              className={`term-chip text-xs tracking-widest ${active ? "active" : ""}`}
               style={
                 active
-                  ? { borderColor: style.dot, color: style.dot, background: style.dot + "22" }
+                  ? { borderColor: style.dot, color: style.dot, background: style.bg }
                   : {}
               }
             >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ background: style.dot }}
-              />
-              {cat.name}
-              <span className="text-xs opacity-60">({cat.count})</span>
+              [{cat.name.toUpperCase()}]
+              <span className="opacity-50 ml-1">{cat.count}</span>
             </button>
           );
         })}
 
         {hasFilters && (
-          <button onClick={clearAll} className="btn text-slate-500 hover:text-slate-300 text-xs gap-1">
-            <X size={12} /> Clear
+          <button
+            onClick={clearAll}
+            className="term-btn text-xs text-term-dim tracking-widest"
+          >
+            <X size={11} /> CLEAR ALL
           </button>
         )}
       </div>
 
-      {/* Exclude incident types */}
+      {/* Exclude types */}
       <ExcludeTypes
         excluded={filters.exclude_types ?? []}
         onChange={(types) => onChange({ ...filters, exclude_types: types, page: 1 })}

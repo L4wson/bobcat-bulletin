@@ -1,16 +1,17 @@
+/* Monochrome amber palette — intensity reflects incident severity */
 export const CATEGORY_COLORS = {
-  Medical:      { bg: "bg-red-500/15",    text: "text-red-400",    border: "border-red-500/40",    dot: "#ef4444" },
-  Traffic:      { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/40", dot: "#f97316" },
-  Theft:        { bg: "bg-yellow-500/15", text: "text-yellow-400", border: "border-yellow-500/40", dot: "#eab308" },
-  Welfare:      { bg: "bg-purple-500/15", text: "text-purple-400", border: "border-purple-500/40", dot: "#a855f7" },
-  Alarm:        { bg: "bg-blue-500/15",   text: "text-blue-400",   border: "border-blue-500/40",   dot: "#3b82f6" },
-  Patrol:       { bg: "bg-green-500/15",  text: "text-green-400",  border: "border-green-500/40",  dot: "#22c55e" },
-  Disturbance:  { bg: "bg-pink-500/15",   text: "text-pink-400",   border: "border-pink-500/40",   dot: "#ec4899" },
-  Suspicious:   { bg: "bg-indigo-500/15", text: "text-indigo-400", border: "border-indigo-500/40", dot: "#6366f1" },
-  Vandalism:    { bg: "bg-amber-500/15",  text: "text-amber-400",  border: "border-amber-500/40",  dot: "#f59e0b" },
-  "Drug/Alcohol": { bg: "bg-cyan-500/15", text: "text-cyan-400",   border: "border-cyan-500/40",   dot: "#06b6d4" },
-  "Lost/Found": { bg: "bg-teal-500/15",   text: "text-teal-400",   border: "border-teal-500/40",   dot: "#14b8a6" },
-  Other:        { bg: "bg-slate-500/15",  text: "text-slate-400",  border: "border-slate-500/40",  dot: "#64748b" },
+  Medical:        { text: "#ff9900", bg: "rgba(255,153,0,0.12)", border: "rgba(255,153,0,0.45)", dot: "#ff9900" },
+  Disturbance:    { text: "#ff9900", bg: "rgba(255,153,0,0.12)", border: "rgba(255,153,0,0.45)", dot: "#ff9900" },
+  Theft:          { text: "#e88a00", bg: "rgba(232,138,0,0.10)", border: "rgba(232,138,0,0.40)", dot: "#e88a00" },
+  Vandalism:      { text: "#e88a00", bg: "rgba(232,138,0,0.10)", border: "rgba(232,138,0,0.40)", dot: "#e88a00" },
+  "Drug/Alcohol": { text: "#e88a00", bg: "rgba(232,138,0,0.10)", border: "rgba(232,138,0,0.40)", dot: "#e88a00" },
+  Welfare:        { text: "#cc7722", bg: "rgba(204,119,34,0.10)", border: "rgba(204,119,34,0.38)", dot: "#cc7722" },
+  Suspicious:     { text: "#cc7722", bg: "rgba(204,119,34,0.10)", border: "rgba(204,119,34,0.38)", dot: "#cc7722" },
+  Traffic:        { text: "#b86a1a", bg: "rgba(184,106,26,0.09)", border: "rgba(184,106,26,0.35)", dot: "#b86a1a" },
+  Alarm:          { text: "#b86a1a", bg: "rgba(184,106,26,0.09)", border: "rgba(184,106,26,0.35)", dot: "#b86a1a" },
+  Patrol:         { text: "#7a4a14", bg: "rgba(122,74,20,0.08)",  border: "rgba(122,74,20,0.30)",  dot: "#7a4a14" },
+  "Lost/Found":   { text: "#7a4a14", bg: "rgba(122,74,20,0.08)",  border: "rgba(122,74,20,0.30)",  dot: "#7a4a14" },
+  Other:          { text: "#5a3608", bg: "rgba(90,54,8,0.08)",    border: "rgba(90,54,8,0.28)",    dot: "#5a3608" },
 };
 
 export function getCategoryStyle(category) {

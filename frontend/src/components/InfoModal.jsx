@@ -1,90 +1,59 @@
-import { X, Search, Filter, EyeOff, RefreshCw, Hash, Calendar } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect } from "react";
 
-function Section({ icon: Icon, title, children }) {
+function Row({ cmd, desc }) {
   return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 shrink-0 w-7 h-7 rounded-lg bg-surface-600 border border-surface-500 flex items-center justify-center">
-        <Icon size={14} className="text-ucgold" />
-      </div>
-      <div>
-        <h3 className="text-sm font-semibold text-slate-100 mb-1">{title}</h3>
-        <p className="text-xs text-slate-400 leading-relaxed">{children}</p>
-      </div>
+    <div className="flex gap-4 py-2 border-b border-term-muted last:border-0">
+      <span className="text-term-bright text-xs font-mono tracking-wide shrink-0 w-36">{cmd}</span>
+      <span className="text-term-base text-xs leading-relaxed">{desc}</span>
     </div>
   );
 }
 
 export default function InfoModal({ onClose }) {
   useEffect(() => {
-    function handler(e) {
-      if (e.key === "Escape") onClose();
-    }
+    function handler(e) { if (e.key === "Escape") onClose(); }
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-md bg-surface-800 border border-surface-500 rounded-xl shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-600">
-          <div>
-            <h2 className="text-base font-bold text-slate-100">How to use Bobcat Bulletin</h2>
-            <p className="text-xs text-slate-500 mt-0.5">UC Merced campus activity at a glance</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded hover:bg-surface-600"
+      <div
+        className="w-full max-w-lg bg-term-bg border border-term-border shadow-2xl"
+        style={{ boxShadow: "0 0 40px rgba(255,153,0,0.15)" }}
+      >
+        {/* Title bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-term-border bg-term-card">
+          <span
+            className="text-term-bright glow-sm tracking-widest"
+            style={{ fontFamily: "VT323, monospace", fontSize: "1.3rem" }}
           >
-            <X size={16} />
+            // TERMINAL HELP
+          </span>
+          <button onClick={onClose} className="text-term-dim hover:text-term-bright transition-colors">
+            <X size={14} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
-          <Section icon={Search} title="Search">
-            Type anything into the search bar to filter by incident type, location, disposition, or
-            report number. Searching a 10-digit number like{" "}
-            <span className="font-mono text-ucgold">2605190011</span> will find that specific report.
-          </Section>
+        <div className="px-4 py-4 max-h-[70vh] overflow-y-auto space-y-1">
+          <div className="text-term-dim text-xs tracking-widest mb-3 prompt">COMMAND REFERENCE</div>
 
-          <Section icon={Filter} title="Filter by category">
-            Click a category chip — Medical, Traffic, Theft, etc. — to show only incidents in that
-            group. Click it again or click <strong className="text-slate-300">All</strong> to clear
-            the filter.
-          </Section>
-
-          <Section icon={EyeOff} title="Hide incident types">
-            Use the <strong className="text-slate-300">Hide types</strong> button to exclude specific
-            types from results. Great for hiding routine{" "}
-            <span className="font-mono text-slate-300">Building/Area Check</span> patrols so
-            noteworthy incidents are easier to spot.
-          </Section>
-
-          <Section icon={Calendar} title="Date range">
-            Use the two date pickers to narrow results to a specific window, such as the past week or
-            a single day.
-          </Section>
-
-          <Section icon={Hash} title="Report numbers">
-            Every incident card shows its UCMPD case number at the bottom. You can paste that number
-            directly into the search bar to pull up that exact report.
-          </Section>
-
-          <Section icon={RefreshCw} title="Live updates">
-            Data is pulled from the UCMPD activity log every <strong className="text-slate-300">6 hours</strong>{" "}
-            automatically. Hit <strong className="text-slate-300">Refresh</strong> in the top-right
-            corner to fetch the latest data right now.
-          </Section>
+          <Row cmd="SEARCH BAR"       desc="Filter by incident type, location, disposition, or report number. Paste a 10-digit report number to find a specific record." />
+          <Row cmd="[CATEGORY]"       desc="Click any category chip to show only that type. Click again or [ALL] to reset." />
+          <Row cmd="[HIDE TYPES]"     desc="Open the exclusion list to hide specific incident types from results. Useful for removing routine Building/Area Check patrol entries." />
+          <Row cmd="DATE RANGE"       desc="Use the two date fields to constrain results to a specific window. Both are optional." />
+          <Row cmd="RPT# NUMBER"      desc="Each card shows the UCMPD case number. Search it directly to retrieve that exact incident." />
+          <Row cmd="REFRESH"          desc="Pulls the latest data from UCMPD immediately. Otherwise the database syncs automatically every 6 hours." />
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-surface-600 text-xs text-slate-500 text-center">
-          Data sourced from UC Merced Police Department · Not affiliated with UCMPD
+        <div className="px-4 py-2 border-t border-term-muted text-term-muted text-xs tracking-widest text-center">
+          DATA SOURCE: UCMPD DAILY ACTIVITY LOGS · NOT AFFILIATED WITH UCMPD
         </div>
       </div>
     </div>
