@@ -5,6 +5,8 @@ services:
     environment:
       DB_PATH: /data/bobcat.db
       SCRAPE_INTERVAL_HOURS: "6"
+      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:80"
+      ADMIN_KEY: "dev-only-key-change-in-production"
     volumes:
       - db_data:/data
     ports:
@@ -22,7 +24,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "5173:5173"
+      - "5173:80"
 
 volumes:
   db_data:

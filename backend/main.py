@@ -1,13 +1,17 @@
 import logging
 import os
+import secrets
 from contextlib import asynccontextmanager
-from datetime import date, datetime
+from datetime import date, timedelta
 from typing import Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, text
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine, get_db
@@ -18,6 +22,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger(__name__)
 
 os.makedirs(os.path.dirname(os.environ.get("DB_PATH", "/data/bobcat.db")), exist_ok=True)
+
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "")
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+SCRAPE_INTERVAL_HOURS = int(os.environ.get("SCRAPE_INTERVAL_HOURS", "6"))
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 
 def startup_scrape():
@@ -39,8 +49,6 @@ def scheduled_scrape():
 
 scheduler = BackgroundScheduler()
 
-SCRAPE_INTERVAL_HOURS = int(os.environ.get("SCRAPE_INTERVAL_HOURS", "6"))
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,12 +62,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Bobcat Bulletin API", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-Admin-Key"],
+    max_age=86400,
 )
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+async def require_admin(x_admin_key: str = Header(default="")):
+    if not ADMIN_KEY or not secrets.compare_digest(x_admin_key, ADMIN_KEY):
+        raise HTTPException(status_code=403, detail="Forbidden")
 
 
 # ---------------------------------------------------------------------------
@@ -68,13 +89,15 @@ app.add_middleware(
 
 
 @app.get("/api/incidents")
+@limiter.limit("60/minute")
 def list_incidents(
+    request: Request,
     category: Optional[str] = Query(None),
     incident_type: Optional[str] = Query(None),
     exclude_type: list[str] = Query(default=[]),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
-    search: Optional[str] = Query(None),
+    search: Optional[str] = Query(None, max_length=200),
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -118,7 +141,8 @@ def list_incidents(
 
 
 @app.get("/api/categories")
-def list_categories(db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def list_categories(request: Request, db: Session = Depends(get_db)):
     rows = (
         db.query(Incident.category, func.count(Incident.id).label("count"))
         .group_by(Incident.category)
@@ -129,7 +153,9 @@ def list_categories(db: Session = Depends(get_db)):
 
 
 @app.get("/api/incident-types")
+@limiter.limit("20/minute")
 def list_incident_types(
+    request: Request,
     category: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
@@ -145,12 +171,11 @@ def list_incident_types(
 
 
 @app.get("/api/stats")
-def get_stats(db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def get_stats(request: Request, db: Session = Depends(get_db)):
     today = date.today()
     total = db.query(Incident).count()
-    this_month = db.query(Incident).filter(
-        Incident.date >= today.replace(day=1)
-    ).count()
+    this_month = db.query(Incident).filter(Incident.date >= today.replace(day=1)).count()
     this_week_start = today.toordinal() - today.weekday()
     this_week = db.query(Incident).filter(
         Incident.date >= date.fromordinal(this_week_start)
@@ -171,14 +196,43 @@ def get_stats(db: Session = Depends(get_db)):
     }
 
 
+@app.get("/api/trends")
+@limiter.limit("20/minute")
+def get_trends(
+    request: Request,
+    days: int = Query(30, ge=7, le=90),
+    db: Session = Depends(get_db),
+):
+    cutoff = date.today() - timedelta(days=days)
+    rows = (
+        db.query(
+            Incident.date,
+            Incident.category,
+            func.count(Incident.id).label("count"),
+        )
+        .filter(Incident.date >= cutoff)
+        .group_by(Incident.date, Incident.category)
+        .order_by(Incident.date)
+        .all()
+    )
+    # Pivot into { date: { category: count } } for easy frontend consumption
+    by_date: dict = {}
+    for r in rows:
+        d = r.date.isoformat()
+        by_date.setdefault(d, {})[r.category] = r.count
+    return [{"date": d, **counts} for d, counts in sorted(by_date.items())]
+
+
 @app.post("/api/scrape")
-def trigger_scrape(db: Session = Depends(get_db)):
+@limiter.limit("5/hour")
+def trigger_scrape(request: Request, db: Session = Depends(get_db), _=Depends(require_admin)):
     added = scrape_recent(db)
     return {"message": f"Scrape complete. {added} new incidents added."}
 
 
 @app.get("/api/health")
-def health():
+@limiter.limit("120/minute")
+def health(request: Request):
     return {"status": "ok"}
 
 

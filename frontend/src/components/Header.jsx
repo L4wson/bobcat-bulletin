@@ -1,5 +1,4 @@
-import { Shield, RefreshCw, Info } from "lucide-react";
-import { triggerScrape } from "../lib/api.js";
+import { Info, RefreshCw, Shield } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import HelpModal from "./HelpModal.jsx";
@@ -12,7 +11,6 @@ export default function Header({ lastUpdated }) {
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      await triggerScrape();
       await qc.invalidateQueries();
     } finally {
       setRefreshing(false);
@@ -30,48 +28,48 @@ export default function Header({ lastUpdated }) {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-surface-800/90 backdrop-blur border-b border-surface-500">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo / Title */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-ucblue">
-            <Shield size={18} className="text-ucgold" />
+      <header className="sticky top-0 z-40 bg-surface-800/90 backdrop-blur border-b border-surface-500">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Logo / Title */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-ucblue">
+              <Shield size={18} className="text-ucgold" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight leading-none text-slate-100">
+                Bobcat Bulletin
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5">UC Merced Police Activity Log</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight leading-none text-slate-100">
-              Bobcat Bulletin
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">UC Merced Police Activity Log</p>
+
+          {/* Right side */}
+          <div className="flex items-center gap-2">
+            {formatted && (
+              <span className="hidden sm:block text-xs text-slate-500 font-mono mr-2">
+                Updated {formatted}
+              </span>
+            )}
+            <button
+              onClick={() => setShowHelp(true)}
+              aria-label="How to use"
+              className="btn bg-surface-600 border border-surface-500 text-slate-400 hover:text-slate-100 hover:border-slate-400"
+            >
+              <Info size={15} />
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="btn bg-surface-600 border border-surface-500 text-slate-300 hover:text-slate-100 hover:border-slate-400 disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+              <span className="hidden sm:inline">{refreshing ? "Updating…" : "Refresh"}</span>
+            </button>
           </div>
         </div>
+      </header>
 
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          {formatted && (
-            <span className="hidden sm:block text-xs text-slate-500 font-mono mr-2">
-              Updated {formatted}
-            </span>
-          )}
-          <button
-            onClick={() => setShowHelp(true)}
-            aria-label="How to use"
-            className="btn bg-surface-600 border border-surface-500 text-slate-400 hover:text-slate-100 hover:border-slate-400"
-          >
-            <Info size={15} />
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="btn bg-surface-600 border border-surface-500 text-slate-300 hover:text-slate-100 hover:border-slate-400 disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">{refreshing ? "Updating…" : "Refresh"}</span>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </>
   );
 }

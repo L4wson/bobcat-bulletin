@@ -1,32 +1,30 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getIncidents, getStats } from "./lib/api.js";
+import { useFilterState } from "./hooks/useFilterState.js";
+import { useLocalStorage } from "./hooks/useLocalStorage.js";
 import Header from "./components/Header.jsx";
 import StatsBar from "./components/StatsBar.jsx";
 import FilterBar from "./components/FilterBar.jsx";
+import MobileFilterDrawer from "./components/MobileFilterDrawer.jsx";
 import IncidentCard from "./components/IncidentCard.jsx";
 import Pagination from "./components/Pagination.jsx";
 import { AlertCircle, Loader2 } from "lucide-react";
 
-const DEFAULT_FILTERS = {
-  category: "",
-  search: "",
-  start_date: "",
-  end_date: "",
-  exclude_types: [],
-  page: 1,
-};
-
 const PER_PAGE = 50;
 
 export default function App() {
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [savedCategory, setSavedCategory] = useLocalStorage("pref_category", "");
+  const [savedExcludeTypes, setSavedExcludeTypes] = useLocalStorage("pref_exclude_types", []);
+
+  const [filters, setFilters] = useFilterState({
+    category: savedCategory,
+    exclude_types: savedExcludeTypes,
+  });
 
   const { data: stats } = useQuery({ queryKey: ["stats"], queryFn: getStats });
 
-  const queryKey = ["incidents", filters];
   const { data, isLoading, isError } = useQuery({
-    queryKey,
+    queryKey: ["incidents", filters],
     queryFn: () =>
       getIncidents({
         category: filters.category,
@@ -42,6 +40,8 @@ export default function App() {
 
   function handleFiltersChange(next) {
     setFilters(next);
+    setSavedCategory(next.category);
+    setSavedExcludeTypes(next.exclude_types ?? []);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -56,7 +56,10 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <StatsBar />
 
-        <FilterBar filters={filters} onChange={handleFiltersChange} />
+        {/* Filter bar — hidden on mobile (drawer handles it) */}
+        <div className="hidden sm:block">
+          <FilterBar filters={filters} onChange={handleFiltersChange} />
+        </div>
 
         {/* Results area */}
         {isLoading && (
@@ -102,7 +105,6 @@ export default function App() {
           </>
         )}
 
-        {/* Backend loading state — no data yet */}
         {!isLoading && !isError && !data && (
           <div className="flex flex-col items-center justify-center py-20 text-slate-500">
             <Loader2 size={32} className="animate-spin mb-3 text-ucgold" />
@@ -110,6 +112,9 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Mobile filter drawer + FAB */}
+      <MobileFilterDrawer filters={filters} onChange={handleFiltersChange} />
 
       <footer className="border-t border-surface-600 mt-12 py-6 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
