@@ -22,8 +22,9 @@ export default function FilterBar({ filters, onChange }) {
     onChange({ category: "", search: "", start_date: "", end_date: "", exclude_types: [], page: 1 });
   }
 
-  const hasFilters =
-    filters.category || filters.search || filters.start_date || filters.end_date || filters.exclude_types?.length;
+  const hasFilters = !!(
+    filters.category || filters.search || filters.start_date || filters.end_date || filters.exclude_types?.length
+  );
 
   return (
     <div className="space-y-3">
