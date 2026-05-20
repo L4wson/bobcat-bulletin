@@ -1,4 +1,4 @@
-const BASE = "/api";
+const BASE = (import.meta.env.VITE_API_BASE ?? "") + "/api";
 
 export async function fetchJSON(path, params = {}) {
   const url = new URL(BASE + path, window.location.origin);
@@ -18,5 +18,4 @@ export async function fetchJSON(path, params = {}) {
 export const getIncidents = (params) => fetchJSON("/incidents", params);
 export const getCategories = () => fetchJSON("/categories");
 export const getStats = () => fetchJSON("/stats");
-export const triggerScrape = () =>
-  fetch("/api/scrape", { method: "POST" }).then((r) => r.json());
+export const getTrends = (days = 30) => fetchJSON("/trends", { days });
