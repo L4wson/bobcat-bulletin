@@ -5,6 +5,7 @@ export const CATEGORY_COLORS = {
   Welfare:      { bg: "bg-purple-500/15", text: "text-purple-400", border: "border-purple-500/40", dot: "#a855f7" },
   Alarm:        { bg: "bg-blue-500/15",   text: "text-blue-400",   border: "border-blue-500/40",   dot: "#3b82f6" },
   Patrol:       { bg: "bg-green-500/15",  text: "text-green-400",  border: "border-green-500/40",  dot: "#22c55e" },
+  Assault:      { bg: "bg-rose-500/15",   text: "text-rose-400",   border: "border-rose-500/40",   dot: "#f43f5e" },
   Disturbance:  { bg: "bg-pink-500/15",   text: "text-pink-400",   border: "border-pink-500/40",   dot: "#ec4899" },
   Suspicious:   { bg: "bg-indigo-500/15", text: "text-indigo-400", border: "border-indigo-500/40", dot: "#6366f1" },
   Vandalism:    { bg: "bg-amber-500/15",  text: "text-amber-400",  border: "border-amber-500/40",  dot: "#f59e0b" },

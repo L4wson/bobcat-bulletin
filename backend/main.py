@@ -274,6 +274,21 @@ def trigger_scrape(request: Request, db: Session = Depends(get_db), _=Depends(re
     return {"message": f"Scrape complete. {added} new incidents added."}
 
 
+@app.post("/api/recategorize")
+@limiter.limit("5/hour")
+def recategorize(request: Request, db: Session = Depends(get_db), _=Depends(require_admin)):
+    from scraper import categorize
+    rows = db.query(Incident).all()
+    updated = 0
+    for row in rows:
+        new_cat = categorize(row.incident_type)
+        if row.category != new_cat:
+            row.category = new_cat
+            updated += 1
+    db.commit()
+    return {"message": f"Recategorized {updated} incidents."}
+
+
 @app.get("/api/health")
 @limiter.limit("120/minute")
 def health(request: Request):
