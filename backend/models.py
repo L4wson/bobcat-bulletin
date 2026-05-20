@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime
+from sqlalchemy import Column, Integer, String, Date, DateTime, Text
 from sqlalchemy.sql import func
 from database import Base
 
@@ -24,3 +24,13 @@ class ScrapeLog(Base):
     year_month = Column(String, index=True)
     incidents_added = Column(Integer, default=0)
     scraped_at = Column(DateTime, server_default=func.now())
+
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String)
+    message = Column(Text)
+    contact = Column(String, nullable=True)
+    submitted_at = Column(DateTime, server_default=func.now())

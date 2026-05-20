@@ -19,3 +19,13 @@ export const getIncidents = (params) => fetchJSON("/incidents", params);
 export const getCategories = () => fetchJSON("/categories");
 export const getStats = () => fetchJSON("/stats");
 export const getTrends = (days = 30) => fetchJSON("/trends", { days });
+
+export async function submitFeedback({ type, message, contact }) {
+  const res = await fetch(BASE + "/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, message, contact }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}

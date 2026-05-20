@@ -14,8 +14,10 @@ from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel
+
 from database import Base, SessionLocal, engine, get_db
-from models import Incident, ScrapeLog
+from models import Feedback, Incident, ScrapeLog
 from scraper import scrape_past_year, scrape_recent
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -221,6 +223,48 @@ def get_trends(
         d = r.date.isoformat()
         by_date.setdefault(d, {})[r.category] = r.count
     return [{"date": d, **counts} for d, counts in sorted(by_date.items())]
+
+
+FEEDBACK_TYPES = {"suggestion", "bug", "question", "removal"}
+
+
+class FeedbackIn(BaseModel):
+    type: str
+    message: str
+    contact: str = ""
+
+
+@app.post("/api/feedback")
+@limiter.limit("5/hour")
+def submit_feedback(request: Request, body: FeedbackIn, db: Session = Depends(get_db)):
+    if body.type not in FEEDBACK_TYPES:
+        raise HTTPException(status_code=422, detail="Invalid type")
+    if not body.message.strip():
+        raise HTTPException(status_code=422, detail="Message required")
+    fb = Feedback(
+        type=body.type,
+        message=body.message.strip()[:2000],
+        contact=body.contact.strip()[:200] or None,
+    )
+    db.add(fb)
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/api/feedback")
+@limiter.limit("30/minute")
+def list_feedback(request: Request, db: Session = Depends(get_db), _=Depends(require_admin)):
+    items = db.query(Feedback).order_by(Feedback.submitted_at.desc()).all()
+    return [
+        {
+            "id": f.id,
+            "type": f.type,
+            "message": f.message,
+            "contact": f.contact,
+            "submitted_at": f.submitted_at.isoformat(),
+        }
+        for f in items
+    ]
 
 
 @app.post("/api/scrape")

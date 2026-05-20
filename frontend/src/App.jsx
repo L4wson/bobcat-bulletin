@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getIncidents, getStats } from "./lib/api.js";
 import { useFilterState } from "./hooks/useFilterState.js";
@@ -8,11 +9,13 @@ import FilterBar from "./components/FilterBar.jsx";
 import MobileFilterDrawer from "./components/MobileFilterDrawer.jsx";
 import IncidentCard from "./components/IncidentCard.jsx";
 import Pagination from "./components/Pagination.jsx";
+import FeedbackModal from "./components/FeedbackModal.jsx";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 const PER_PAGE = 50;
 
 export default function App() {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [savedCategory, setSavedCategory] = useLocalStorage("pref_category", "");
   const [savedExcludeTypes, setSavedExcludeTypes] = useLocalStorage("pref_exclude_types", []);
 
@@ -116,6 +119,8 @@ export default function App() {
       {/* Mobile filter drawer + FAB */}
       <MobileFilterDrawer filters={filters} onChange={handleFiltersChange} />
 
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
+
       <footer className="border-t border-surface-600 mt-12 py-6 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
           <span>
@@ -130,14 +135,12 @@ export default function App() {
             </a>
             . Not affiliated with or endorsed by UCMPD.
           </span>
-          <a
-            href="https://github.com/L4wson/bobcat-bulletin/issues/new/choose"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => setFeedbackOpen(true)}
             className="text-slate-500 hover:text-slate-300 underline whitespace-nowrap"
           >
             Suggestions · Questions · Request removal
-          </a>
+          </button>
         </div>
       </footer>
     </div>
