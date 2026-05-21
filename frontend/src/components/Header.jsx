@@ -18,11 +18,13 @@ export default function Header({ lastUpdated }) {
   }
 
   const formatted = lastUpdated
-    ? new Date(lastUpdated).toLocaleString("en-US", {
+    ? new Date(lastUpdated + "Z").toLocaleString("en-US", {
+        timeZone: "America/Los_Angeles",
         month: "short",
         day: "numeric",
         hour: "numeric",
         minute: "2-digit",
+        timeZoneName: "short",
       })
     : null;
 
