@@ -10,7 +10,7 @@ import MobileFilterDrawer from "./components/MobileFilterDrawer.jsx";
 import IncidentCard from "./components/IncidentCard.jsx";
 import Pagination from "./components/Pagination.jsx";
 import FeedbackModal from "./components/FeedbackModal.jsx";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Search, X } from "lucide-react";
 
 const PER_PAGE = 50;
 
@@ -58,6 +58,28 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <StatsBar />
+
+        {/* Search — mobile only, shown below stats */}
+        <div className="relative sm:hidden">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            value={filters.search}
+            onChange={(e) => handleFiltersChange({ ...filters, search: e.target.value, page: 1 })}
+            placeholder="Search incidents, locations, report #…"
+            className="w-full bg-surface-700 border border-surface-500 rounded pl-9 pr-3 py-2 text-sm
+                       text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-400
+                       font-mono transition-colors"
+          />
+          {filters.search && (
+            <button
+              onClick={() => handleFiltersChange({ ...filters, search: "", page: 1 })}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
 
         {/* Filter bar — hidden on mobile (drawer handles it) */}
         <div className="hidden sm:block">
