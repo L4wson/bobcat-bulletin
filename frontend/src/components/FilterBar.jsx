@@ -4,7 +4,7 @@ import { getCategoryStyle } from "../lib/categories.js";
 import { Search, X } from "lucide-react";
 import ExcludeTypes from "./ExcludeTypes.jsx";
 
-export default function FilterBar({ filters, onChange }) {
+export default function FilterBar({ filters, onChange, showSearch = true }) {
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,
@@ -30,26 +30,28 @@ export default function FilterBar({ filters, onChange }) {
     <div className="space-y-3">
       {/* Search + date row */}
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search incidents, locations, report #…"
-            className="w-full bg-surface-700 border border-surface-500 rounded pl-9 pr-3 py-2 text-sm
-                       text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-400
-                       font-mono transition-colors"
-          />
-          {filters.search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
+        {showSearch && (
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search incidents, locations, report #…"
+              className="w-full bg-surface-700 border border-surface-500 rounded pl-9 pr-3 py-2 text-sm
+                         text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-400
+                         font-mono transition-colors"
+            />
+            {filters.search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-2">
           <input

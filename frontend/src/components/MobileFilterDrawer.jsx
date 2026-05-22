@@ -60,7 +60,7 @@ export default function MobileFilterDrawer({ filters, onChange }) {
           </button>
         </div>
         <div className="px-4 pb-8 max-h-[75vh] overflow-y-auto">
-          <FilterBar filters={filters} onChange={handleChange} />
+          <FilterBar filters={filters} onChange={handleChange} showSearch={false} />
         </div>
       </div>
     </>
