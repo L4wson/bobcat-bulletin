@@ -1,14 +1,22 @@
+"""
+Scrapes UC Merced police daily activity logs and pushes incidents to the API.
+Run from GitHub Actions or locally:
+  ADMIN_KEY=xxx API_URL=https://... python scripts/scrape_and_push.py
+"""
+
+import json
+import os
 import re
-import logging
-from datetime import date, datetime, timedelta
+import sys
+from datetime import date, timedelta
 
 import requests
 from bs4 import BeautifulSoup
-from sqlalchemy.orm import Session
 
-from models import Incident, ScrapeLog
+API_URL = os.environ.get("API_URL", "https://bobcat-bulletin-api.fly.dev")
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "")
 
-logger = logging.getLogger(__name__)
+BASE_URL = "https://police.ucmerced.edu/daily-activity-logs"
 
 HEADERS = {
     "User-Agent": (
@@ -28,8 +36,6 @@ HEADERS = {
     "Sec-Fetch-User": "?1",
     "Cache-Control": "max-age=0",
 }
-
-BASE_URL = "https://police.ucmerced.edu/daily-activity-logs"
 
 CATEGORY_MAP = [
     ("Medical",      ["medical", "injury", "first aid", "sick", "ems", "ambulance"]),
@@ -59,15 +65,13 @@ def categorize(incident_type: str) -> str:
 def fetch_month_text(year: int, month: int) -> str | None:
     url = f"{BASE_URL}/{year:04d}-{month:02d}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=20)
+        resp = requests.get(url, headers=HEADERS, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as e:
-        logger.warning("Failed to fetch %s: %s", url, e)
+        print(f"  Failed to fetch {url}: {e}", file=sys.stderr)
         return None
 
     soup = BeautifulSoup(resp.text, "html.parser")
-
-    # Try common Drupal content selectors in order
     for selector in [
         "div.field--name-body",
         "div.field-items",
@@ -80,40 +84,35 @@ def fetch_month_text(year: int, month: int) -> str | None:
         node = soup.select_one(selector)
         if node:
             return node.get_text("\n")
-
     return soup.get_text("\n")
 
 
 def parse_log_text(text: str, fallback_year: int, fallback_month: int) -> list[dict]:
     incidents = []
-    current_date: date | None = None
+    current_date = None
     lines = text.splitlines()
     i = 0
 
     while i < len(lines):
         line = lines[i].strip()
 
-        # Date header — "04/01/2025" optionally wrapped in ** or other noise
         date_match = re.search(r"(\d{1,2})/(\d{1,2})/(\d{4})", line)
         if date_match and re.search(r"\d{4}", line):
             try:
                 m, d_, y = int(date_match.group(1)), int(date_match.group(2)), int(date_match.group(3))
                 if 1 <= m <= 12 and 1 <= d_ <= 31:
-                    current_date = date(y, m, d_)
+                    current_date = date(y, m, d_).isoformat()
             except ValueError:
                 pass
             i += 1
             continue
 
-        # Separator line
         if re.match(r"[\*=\-]{5,}", line):
             i += 1
             continue
 
-        # Incident header line: HH:MM  <type>  <10-digit case number>
         inc_match = re.match(r"(\d{2}:\d{2})\s{2,}(.+?)\s{2,}(\d{8,12})\s*$", line)
         if not inc_match:
-            # Also try with single spaces around type (some months differ)
             inc_match = re.match(r"(\d{2}:\d{2})\s+(.+?)\s+(\d{10})\s*$", line)
 
         if inc_match and current_date:
@@ -121,7 +120,6 @@ def parse_log_text(text: str, fallback_year: int, fallback_month: int) -> list[d
             incident_type = inc_match.group(2).strip()
             case_number = inc_match.group(3)
 
-            # Collect body lines until the next separator or next incident header
             i += 1
             body_lines = []
             while i < len(lines):
@@ -134,7 +132,6 @@ def parse_log_text(text: str, fallback_year: int, fallback_month: int) -> list[d
                 i += 1
 
             body = " ".join(bl for bl in body_lines if bl)
-
             disp_match = re.search(r"Disposition:\s*([^\.]+\.?)\s*$", body, re.IGNORECASE)
             if disp_match:
                 disposition = disp_match.group(1).strip().rstrip(".")
@@ -143,71 +140,60 @@ def parse_log_text(text: str, fallback_year: int, fallback_month: int) -> list[d
                 disposition = ""
                 location = body.strip().rstrip(".")
 
-            incidents.append(
-                {
-                    "case_number": case_number,
-                    "date": current_date,
-                    "time": time_str,
-                    "incident_type": incident_type,
-                    "category": categorize(incident_type),
-                    "location": location,
-                    "disposition": disposition,
-                }
-            )
+            incidents.append({
+                "case_number": case_number,
+                "date": current_date,
+                "time": time_str,
+                "incident_type": incident_type,
+                "category": categorize(incident_type),
+                "location": location,
+                "disposition": disposition,
+            })
         else:
             i += 1
 
     return incidents
 
 
-def scrape_month(db: Session, year: int, month: int) -> int:
-    text = fetch_month_text(year, month)
-    if not text:
+def push_incidents(incidents: list[dict]) -> int:
+    if not incidents:
         return 0
-
-    parsed = parse_log_text(text, year, month)
-    added = 0
-    seen: set[str] = set()
-
-    for data in parsed:
-        cn = data["case_number"]
-        if not cn or cn in seen:
-            continue
-        seen.add(cn)
-        if not db.query(Incident).filter_by(case_number=cn).first():
-            db.add(Incident(**data))
-            added += 1
-
-    if added:
-        db.commit()
-
-    db.add(ScrapeLog(year_month=f"{year:04d}-{month:02d}", incidents_added=added))
-    db.commit()
-
-    logger.info("Scraped %d-%02d: %d new incidents", year, month, added)
-    return added
+    resp = requests.post(
+        f"{API_URL}/api/incidents/bulk",
+        json=incidents,
+        headers={"X-Admin-Key": ADMIN_KEY, "Content-Type": "application/json"},
+        timeout=60,
+    )
+    resp.raise_for_status()
+    return resp.json()["added"]
 
 
-def scrape_past_year(db: Session) -> int:
+def scrape_recent_months() -> int:
     today = date.today()
-    total = 0
-    year, month = today.year, today.month
-    for _ in range(13):  # current month + 12 months back
-        already = db.query(ScrapeLog).filter_by(year_month=f"{year:04d}-{month:02d}").first()
-        if not already:
-            total += scrape_month(db, year, month)
-        # Walk back one calendar month
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    return total
-
-
-def scrape_recent(db: Session) -> int:
-    """Scrape current month and the previous month to catch late-added entries."""
-    today = date.today()
-    total = scrape_month(db, today.year, today.month)
+    months = [(today.year, today.month)]
     prev = (date(today.year, today.month, 1) - timedelta(days=1)).replace(day=1)
-    total += scrape_month(db, prev.year, prev.month)
-    return total
+    months.append((prev.year, prev.month))
+
+    total_added = 0
+    for year, month in months:
+        print(f"Scraping {year}-{month:02d}...")
+        text = fetch_month_text(year, month)
+        if not text:
+            print(f"  No data for {year}-{month:02d}")
+            continue
+        incidents = parse_log_text(text, year, month)
+        print(f"  Parsed {len(incidents)} incidents")
+        if incidents:
+            added = push_incidents(incidents)
+            print(f"  Added {added} new incidents to DB")
+            total_added += added
+
+    return total_added
+
+
+if __name__ == "__main__":
+    if not ADMIN_KEY:
+        print("ERROR: ADMIN_KEY environment variable not set", file=sys.stderr)
+        sys.exit(1)
+    total = scrape_recent_months()
+    print(f"\nDone. Total new incidents: {total}")

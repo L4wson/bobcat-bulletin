@@ -225,6 +225,41 @@ def get_trends(
     return [{"date": d, **counts} for d, counts in sorted(by_date.items())]
 
 
+class IncidentIn(BaseModel):
+    case_number: str
+    date: date
+    time: str
+    incident_type: str
+    category: str
+    location: str = ""
+    disposition: str = ""
+
+
+@app.post("/api/incidents/bulk")
+@limiter.limit("10/hour")
+def bulk_ingest(
+    request: Request,
+    incidents: list[IncidentIn],
+    db: Session = Depends(get_db),
+    _=Depends(require_admin),
+):
+    added = 0
+    seen: set[str] = set()
+    for data in incidents:
+        cn = data.case_number
+        if not cn or cn in seen:
+            continue
+        seen.add(cn)
+        if not db.query(Incident).filter_by(case_number=cn).first():
+            db.add(Incident(**data.model_dump()))
+            added += 1
+    if added:
+        db.commit()
+    db.add(ScrapeLog(year_month="bulk-ingest", incidents_added=added))
+    db.commit()
+    return {"added": added}
+
+
 FEEDBACK_TYPES = {"suggestion", "bug", "question", "removal"}
 
 

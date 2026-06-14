@@ -1,0 +1,27 @@
+name: Scheduled Scrape
+
+on:
+  schedule:
+    # 8:00 AM PST (16:00 UTC) and 8:00 PM PST (04:00 UTC)
+    - cron: "0 16 * * *"
+    - cron: "0 4 * * *"
+  workflow_dispatch: # allow manual trigger from GitHub Actions UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Scrape and push
+        env:
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+          API_URL: https://bobcat-bulletin-api.fly.dev
+        run: python scripts/scrape_and_push.py
