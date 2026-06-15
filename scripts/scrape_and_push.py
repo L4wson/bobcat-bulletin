@@ -1,6 +1,6 @@
 """
-Scrapes UC Merced police daily activity logs via Playwright (bypasses Akamai)
-and pushes incidents to the API.
+Scrapes UC Merced police daily activity logs and pushes incidents to the API.
+Uses curl-cffi to impersonate Chrome's TLS fingerprint, bypassing Akamai WAF.
 
 Run from GitHub Actions or locally:
   ADMIN_KEY=xxx API_URL=https://... python scripts/scrape_and_push.py
@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 import requests
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+from curl_cffi import requests as cffi_requests
 
 API_URL = os.environ.get("API_URL", "https://bobcat-bulletin-api.fly.dev")
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "")
@@ -45,39 +45,20 @@ def categorize(incident_type: str) -> str:
     return "Other"
 
 
+_session = cffi_requests.Session()
+
+
 def fetch_month_text(year: int, month: int) -> str | None:
     url = f"{BASE_URL}/{year:04d}-{month:02d}"
-    print(f"  Fetching {url} via Playwright...")
+    print(f"  Fetching {url}...")
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/125.0.0.0 Safari/537.36"
-                ),
-                viewport={"width": 1280, "height": 800},
-                locale="en-US",
-            )
-            page = context.new_page()
-            resp = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            if resp and resp.status == 403:
-                print(f"  403 Forbidden for {url}", file=sys.stderr)
-                browser.close()
-                return None
-            # Wait for body content to be present
-            page.wait_for_selector("body", timeout=10000)
-            html = page.content()
-            browser.close()
-    except PlaywrightTimeout:
-        print(f"  Timeout fetching {url}", file=sys.stderr)
-        return None
+        resp = _session.get(url, impersonate="chrome124", timeout=20)
+        resp.raise_for_status()
     except Exception as e:
-        print(f"  Error fetching {url}: {e}", file=sys.stderr)
+        print(f"  Failed: {e}", file=sys.stderr)
         return None
 
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(resp.text, "html.parser")
     for selector in [
         "div.field--name-body",
         "div.field-items",
