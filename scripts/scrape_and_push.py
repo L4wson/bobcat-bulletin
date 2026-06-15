@@ -1,10 +1,11 @@
 """
-Scrapes UC Merced police daily activity logs and pushes incidents to the API.
+Scrapes UC Merced police daily activity logs via Playwright (bypasses Akamai)
+and pushes incidents to the API.
+
 Run from GitHub Actions or locally:
   ADMIN_KEY=xxx API_URL=https://... python scripts/scrape_and_push.py
 """
 
-import json
 import os
 import re
 import sys
@@ -12,30 +13,12 @@ from datetime import date, timedelta
 
 import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
 API_URL = os.environ.get("API_URL", "https://bobcat-bulletin-api.fly.dev")
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "")
 
 BASE_URL = "https://police.ucmerced.edu/daily-activity-logs"
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/125.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Referer": "https://police.ucmerced.edu/",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "same-origin",
-    "Sec-Fetch-User": "?1",
-    "Cache-Control": "max-age=0",
-}
 
 CATEGORY_MAP = [
     ("Medical",      ["medical", "injury", "first aid", "sick", "ems", "ambulance"]),
@@ -64,14 +47,37 @@ def categorize(incident_type: str) -> str:
 
 def fetch_month_text(year: int, month: int) -> str | None:
     url = f"{BASE_URL}/{year:04d}-{month:02d}"
+    print(f"  Fetching {url} via Playwright...")
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=30)
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        print(f"  Failed to fetch {url}: {e}", file=sys.stderr)
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/125.0.0.0 Safari/537.36"
+                ),
+                viewport={"width": 1280, "height": 800},
+                locale="en-US",
+            )
+            page = context.new_page()
+            resp = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            if resp and resp.status == 403:
+                print(f"  403 Forbidden for {url}", file=sys.stderr)
+                browser.close()
+                return None
+            # Wait for body content to be present
+            page.wait_for_selector("body", timeout=10000)
+            html = page.content()
+            browser.close()
+    except PlaywrightTimeout:
+        print(f"  Timeout fetching {url}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"  Error fetching {url}: {e}", file=sys.stderr)
         return None
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(html, "html.parser")
     for selector in [
         "div.field--name-body",
         "div.field-items",
