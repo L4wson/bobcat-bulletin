@@ -2,32 +2,15 @@ import re
 import logging
 from datetime import date, datetime, timedelta
 
-import requests
 from bs4 import BeautifulSoup
+from curl_cffi import requests as cffi_requests
 from sqlalchemy.orm import Session
 
 from models import Incident, ScrapeLog
 
 logger = logging.getLogger(__name__)
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/125.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Referer": "https://police.ucmerced.edu/",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "same-origin",
-    "Sec-Fetch-User": "?1",
-    "Cache-Control": "max-age=0",
-}
+_session = cffi_requests.Session()
 
 BASE_URL = "https://police.ucmerced.edu/daily-activity-logs"
 
@@ -59,9 +42,9 @@ def categorize(incident_type: str) -> str:
 def fetch_month_text(year: int, month: int) -> str | None:
     url = f"{BASE_URL}/{year:04d}-{month:02d}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=20)
+        resp = _session.get(url, impersonate="chrome124", timeout=20)
         resp.raise_for_status()
-    except requests.RequestException as e:
+    except Exception as e:
         logger.warning("Failed to fetch %s: %s", url, e)
         return None
 
