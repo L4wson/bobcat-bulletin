@@ -16,6 +16,8 @@ export async function fetchJSON(path, params = {}) {
 }
 
 export const getIncidents = (params) => fetchJSON("/incidents", params);
+export const getIncident = (caseNumber) =>
+  fetchJSON(`/incidents/${encodeURIComponent(caseNumber)}`);
 export const getCategories = () => fetchJSON("/categories");
 export const getStats = () => fetchJSON("/stats");
 export const getTrends = (days = 30) => fetchJSON("/trends", { days });

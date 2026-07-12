@@ -142,6 +142,39 @@ def list_incidents(
     }
 
 
+@app.get("/api/incidents/{case_number}")
+@limiter.limit("60/minute")
+def get_incident(
+    request: Request,
+    case_number: str,
+    db: Session = Depends(get_db),
+):
+    incident = db.query(Incident).filter(Incident.case_number == case_number).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    related = []
+    if incident.location:
+        window = timedelta(days=30)
+        related = (
+            db.query(Incident)
+            .filter(
+                Incident.location == incident.location,
+                Incident.id != incident.id,
+                Incident.date >= incident.date - window,
+                Incident.date <= incident.date + window,
+            )
+            .order_by(Incident.date.desc(), Incident.time.desc())
+            .limit(6)
+            .all()
+        )
+
+    return {
+        "incident": _serialize(incident),
+        "related": [_serialize(i) for i in related],
+    }
+
+
 @app.get("/api/categories")
 @limiter.limit("20/minute")
 def list_categories(request: Request, db: Session = Depends(get_db)):
