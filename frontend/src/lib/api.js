@@ -22,6 +22,22 @@ export const getCategories = () => fetchJSON("/categories");
 export const getStats = () => fetchJSON("/stats");
 export const getTrends = (days = 30) => fetchJSON("/trends", { days });
 
+export const getComments = (caseNumber) =>
+  fetchJSON(`/incidents/${encodeURIComponent(caseNumber)}/comments`);
+
+export async function submitComment(caseNumber, { body, website = "" }) {
+  const res = await fetch(`${BASE}/incidents/${encodeURIComponent(caseNumber)}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ body, website }),
+  });
+  if (!res.ok) {
+    const detail = await res.json().then((d) => d.detail).catch(() => null);
+    throw new Error(detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function submitFeedback({ type, message, contact }) {
   const res = await fetch(BASE + "/feedback", {
     method: "POST",

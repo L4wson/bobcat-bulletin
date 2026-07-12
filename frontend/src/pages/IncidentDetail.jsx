@@ -17,6 +17,7 @@ import { getIncident } from "../lib/api.js";
 import { getCategoryStyle } from "../lib/categories.js";
 import { formatDate, formatTime } from "../lib/format.js";
 import IncidentCard from "../components/IncidentCard.jsx";
+import CommentsSection from "../components/CommentsSection.jsx";
 
 function DetailRow({ icon: Icon, label, children }) {
   return (
@@ -144,6 +145,8 @@ export default function IncidentDetail() {
               </DetailRow>
             </div>
           </div>
+
+          <CommentsSection caseNumber={data.incident.case_number} />
 
           {data.related.length > 0 && (
             <section>

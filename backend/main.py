@@ -2,7 +2,7 @@ import logging
 import os
 import secrets
 from contextlib import asynccontextmanager
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from database import Base, SessionLocal, engine, get_db
-from models import Feedback, Incident, ScrapeLog
+from models import Comment, Feedback, Incident, ScrapeLog
 from scraper import scrape_past_year, scrape_recent
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -173,6 +173,113 @@ def get_incident(
         "incident": _serialize(incident),
         "related": [_serialize(i) for i in related],
     }
+
+
+# ---------------------------------------------------------------------------
+# Anonymous comments — held for moderation before they appear publicly
+# ---------------------------------------------------------------------------
+
+COMMENT_MIN_LEN = 10
+COMMENT_MAX_LEN = 1000
+
+
+class CommentIn(BaseModel):
+    body: str
+    website: str = ""  # honeypot — real users never fill this
+
+
+def _serialize_comment(c: Comment, include_moderation: bool = False) -> dict:
+    out = {
+        "id": c.id,
+        "case_number": c.case_number,
+        "body": c.body,
+        "submitted_at": c.submitted_at.isoformat() if c.submitted_at else None,
+    }
+    if include_moderation:
+        out["status"] = c.status
+        out["moderated_at"] = c.moderated_at.isoformat() if c.moderated_at else None
+    return out
+
+
+@app.get("/api/incidents/{case_number}/comments")
+@limiter.limit("60/minute")
+def list_comments(request: Request, case_number: str, db: Session = Depends(get_db)):
+    items = (
+        db.query(Comment)
+        .filter(Comment.case_number == case_number, Comment.status == "approved")
+        .order_by(Comment.submitted_at)
+        .all()
+    )
+    return [_serialize_comment(c) for c in items]
+
+
+@app.post("/api/incidents/{case_number}/comments")
+@limiter.limit("5/hour")
+def submit_comment(
+    request: Request,
+    case_number: str,
+    body: CommentIn,
+    db: Session = Depends(get_db),
+):
+    if body.website.strip():
+        # Honeypot tripped — pretend success so bots don't adapt
+        return {"ok": True, "status": "pending"}
+
+    if not db.query(Incident).filter(Incident.case_number == case_number).first():
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    text = body.body.strip()
+    if len(text) < COMMENT_MIN_LEN:
+        raise HTTPException(status_code=422, detail=f"Comment must be at least {COMMENT_MIN_LEN} characters")
+    if len(text) > COMMENT_MAX_LEN:
+        raise HTTPException(status_code=422, detail=f"Comment must be under {COMMENT_MAX_LEN} characters")
+
+    db.add(Comment(case_number=case_number, body=text))
+    db.commit()
+    return {"ok": True, "status": "pending"}
+
+
+@app.get("/api/admin/comments")
+@limiter.limit("60/minute")
+def list_comments_admin(
+    request: Request,
+    status: str = Query("pending"),
+    db: Session = Depends(get_db),
+    _=Depends(require_admin),
+):
+    if status not in {"pending", "approved", "rejected"}:
+        raise HTTPException(status_code=422, detail="Invalid status")
+    items = (
+        db.query(Comment)
+        .filter(Comment.status == status)
+        .order_by(Comment.submitted_at)
+        .all()
+    )
+    return [_serialize_comment(c, include_moderation=True) for c in items]
+
+
+class ModerationIn(BaseModel):
+    action: str  # approve | reject
+
+
+@app.post("/api/admin/comments/{comment_id}")
+@limiter.limit("120/minute")
+def moderate_comment(
+    request: Request,
+    comment_id: int,
+    body: ModerationIn,
+    db: Session = Depends(get_db),
+    _=Depends(require_admin),
+):
+    if body.action not in {"approve", "reject"}:
+        raise HTTPException(status_code=422, detail="Invalid action")
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    comment.status = "approved" if body.action == "approve" else "rejected"
+    comment.moderated_at = datetime.utcnow()
+    db.commit()
+    return _serialize_comment(comment, include_moderation=True)
 
 
 @app.get("/api/categories")
