@@ -1,42 +1,15 @@
+import { Link } from "react-router-dom";
 import { MapPin, Clock, Hash, CheckCircle } from "lucide-react";
 import { getCategoryStyle } from "../lib/categories.js";
-
-function formatDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-}
-
-function formatTime(dateIso, timeStr) {
-  if (!timeStr) return "";
-  // Times from UCMPD are Pacific Time — convert to user's local timezone
-  const refUtc = new Date(`${dateIso}T20:00:00Z`);
-  const pacificHour = parseInt(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Los_Angeles",
-      hour: "2-digit",
-      hour12: false,
-    }).format(refUtc)
-  );
-  const offsetHours = 20 - pacificHour; // 7 = PDT, 8 = PST
-  const [h, m] = timeStr.split(":").map(Number);
-  const utcMs =
-    new Date(`${dateIso}T00:00:00Z`).getTime() +
-    (h + offsetHours) * 3_600_000 +
-    m * 60_000;
-  return new Date(utcMs).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
+import { formatDate, formatTime } from "../lib/format.js";
 
 export default function IncidentCard({ incident }) {
   const style = getCategoryStyle(incident.category);
 
   return (
-    <div
-      className="card p-4 hover:border-slate-500 transition-colors duration-150 group"
+    <Link
+      to={`/incident/${encodeURIComponent(incident.case_number)}`}
+      className="card block p-4 hover:border-slate-500 transition-colors duration-150 group"
       style={{ borderLeftWidth: "3px", borderLeftColor: style.dot }}
     >
       {/* Top row: category badge + date/time */}
@@ -82,6 +55,6 @@ export default function IncidentCard({ incident }) {
         <Hash size={10} className="text-slate-600" />
         <span className="text-xs font-mono text-slate-600">{incident.case_number}</span>
       </div>
-    </div>
+    </Link>
   );
 }
