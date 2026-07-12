@@ -26,6 +26,17 @@ class ScrapeLog(Base):
     scraped_at = Column(DateTime, server_default=func.now())
 
 
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    case_number = Column(String, index=True)
+    body = Column(Text)
+    status = Column(String, default="pending", index=True)  # pending | approved | rejected
+    submitted_at = Column(DateTime, server_default=func.now())
+    moderated_at = Column(DateTime, nullable=True)
+
+
 class Feedback(Base):
     __tablename__ = "feedback"
 

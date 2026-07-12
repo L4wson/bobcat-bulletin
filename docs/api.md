@@ -67,6 +67,108 @@ curl "http://localhost:8000/api/incidents?search=granite+pass"
 
 ---
 
+## `GET /api/incidents/{case_number}`
+
+Returns a single incident plus up to six related incidents (same location, within ±30 days). Returns `404` if the case number is unknown.
+
+### Response
+
+```json
+{
+  "incident": {
+    "id": 962,
+    "case_number": "2605190011",
+    "date": "2026-05-19",
+    "time": "06:20",
+    "incident_type": "Alarm",
+    "category": "Alarm",
+    "location": "Officer initiated activity at Ucmpd, Services Ln, Merced, CA. Accidental trip",
+    "disposition": "False Alarm"
+  },
+  "related": []
+}
+```
+
+---
+
+## `GET /api/incidents/{case_number}/comments`
+
+Returns approved anonymous comments for an incident, oldest first. Pending and rejected comments are never exposed.
+
+### Response
+
+```json
+[
+  {
+    "id": 3,
+    "case_number": "2605190011",
+    "body": "I was in the building when this happened — it was a burnt bagel in the second-floor kitchen.",
+    "submitted_at": "2026-07-12T21:14:02"
+  }
+]
+```
+
+---
+
+## `POST /api/incidents/{case_number}/comments`
+
+Submits an anonymous comment. Comments start as `pending` and only appear publicly after a moderator approves them. Rate limited to 5 per hour per IP. Body must be 10–1000 characters. Returns `404` if the case number is unknown.
+
+### Request Body
+
+```json
+{ "body": "What you know about this incident." }
+```
+
+The optional `website` field is a honeypot — leave it empty (bots that fill it get a fake success and the comment is discarded).
+
+### Response
+
+```json
+{ "ok": true, "status": "pending" }
+```
+
+---
+
+## `GET /api/admin/comments` 🔒
+
+Lists comments by moderation status. Requires the `X-Admin-Key` header.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `status` | string | `pending` | One of `pending`, `approved`, `rejected`. |
+
+### Example
+
+```bash
+curl -H "X-Admin-Key: $ADMIN_KEY" "http://localhost:8000/api/admin/comments?status=pending"
+```
+
+---
+
+## `POST /api/admin/comments/{id}` 🔒
+
+Approves or rejects a comment. Requires the `X-Admin-Key` header.
+
+### Request Body
+
+```json
+{ "action": "approve" }
+```
+
+`action` is `approve` or `reject`.
+
+### Example
+
+```bash
+curl -X POST -H "X-Admin-Key: $ADMIN_KEY" -H "Content-Type: application/json" \
+  -d '{"action":"approve"}' http://localhost:8000/api/admin/comments/3
+```
+
+---
+
 ## `GET /api/categories`
 
 Returns all incident categories with counts, sorted by frequency.
