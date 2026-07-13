@@ -38,6 +38,30 @@ export async function submitComment(caseNumber, { body, website = "" }) {
   return res.json();
 }
 
+async function adminFetch(path, adminKey, options = {}) {
+  const res = await fetch(BASE + path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Key": adminKey,
+      ...options.headers,
+    },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export const getAdminComments = (adminKey, status) =>
+  adminFetch(`/admin/comments?status=${encodeURIComponent(status)}`, adminKey);
+
+export const moderateComment = (adminKey, id, action) =>
+  adminFetch(`/admin/comments/${id}`, adminKey, {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  });
+
+export const getAdminFeedback = (adminKey) => adminFetch("/feedback", adminKey);
+
 export async function submitFeedback({ type, message, contact }) {
   const res = await fetch(BASE + "/feedback", {
     method: "POST",
