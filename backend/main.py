@@ -11,13 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from pydantic import BaseModel
 
 from database import Base, SessionLocal, engine, get_db
 from models import Comment, Feedback, Incident, ScrapeLog
+from moderation import screen_comment
 from scraper import scrape_past_year, scrape_recent
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -52,9 +53,22 @@ def scheduled_scrape():
 scheduler = BackgroundScheduler()
 
 
+def migrate_comments_schema():
+    """create_all doesn't alter existing tables, so add columns introduced
+    after the comments table first shipped, and fold the retired 'pending'
+    status into 'flagged'."""
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(comments)"))]
+        if cols and "flags" not in cols:
+            conn.execute(text("ALTER TABLE comments ADD COLUMN flags VARCHAR DEFAULT ''"))
+        if cols:
+            conn.execute(text("UPDATE comments SET status='flagged' WHERE status='pending'"))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    migrate_comments_schema()
     startup_scrape()
     scheduler.add_job(scheduled_scrape, "interval", hours=SCRAPE_INTERVAL_HOURS, id="scrape")
     scheduler.start()
@@ -176,7 +190,8 @@ def get_incident(
 
 
 # ---------------------------------------------------------------------------
-# Anonymous comments — held for moderation before they appear publicly
+# Anonymous comments — auto-approved unless the screener finds personal
+# info (names, contact details), in which case they're flagged for review
 # ---------------------------------------------------------------------------
 
 COMMENT_MIN_LEN = 10
@@ -197,6 +212,7 @@ def _serialize_comment(c: Comment, include_moderation: bool = False) -> dict:
     }
     if include_moderation:
         out["status"] = c.status
+        out["flags"] = [f for f in (c.flags or "").split(",") if f]
         out["moderated_at"] = c.moderated_at.isoformat() if c.moderated_at else None
     return out
 
@@ -223,7 +239,7 @@ def submit_comment(
 ):
     if body.website.strip():
         # Honeypot tripped — pretend success so bots don't adapt
-        return {"ok": True, "status": "pending"}
+        return {"ok": True, "status": "approved"}
 
     if not db.query(Incident).filter(Incident.case_number == case_number).first():
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -234,20 +250,22 @@ def submit_comment(
     if len(text) > COMMENT_MAX_LEN:
         raise HTTPException(status_code=422, detail=f"Comment must be under {COMMENT_MAX_LEN} characters")
 
-    db.add(Comment(case_number=case_number, body=text))
+    reasons = screen_comment(text)
+    status = "flagged" if reasons else "approved"
+    db.add(Comment(case_number=case_number, body=text, status=status, flags=",".join(reasons)))
     db.commit()
-    return {"ok": True, "status": "pending"}
+    return {"ok": True, "status": status}
 
 
 @app.get("/api/admin/comments")
 @limiter.limit("60/minute")
 def list_comments_admin(
     request: Request,
-    status: str = Query("pending"),
+    status: str = Query("flagged"),
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
-    if status not in {"pending", "approved", "rejected"}:
+    if status not in {"flagged", "approved", "rejected"}:
         raise HTTPException(status_code=422, detail="Invalid status")
     items = (
         db.query(Comment)
