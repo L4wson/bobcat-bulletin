@@ -32,7 +32,8 @@ class Comment(Base):
     id = Column(Integer, primary_key=True, index=True)
     case_number = Column(String, index=True)
     body = Column(Text)
-    status = Column(String, default="pending", index=True)  # pending | approved | rejected
+    status = Column(String, default="approved", index=True)  # approved | flagged | rejected
+    flags = Column(String, default="")  # comma-separated reasons the screener held it
     submitted_at = Column(DateTime, server_default=func.now())
     moderated_at = Column(DateTime, nullable=True)
 

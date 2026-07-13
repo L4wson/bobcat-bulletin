@@ -19,7 +19,7 @@ export default function CommentsSection({ caseNumber }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(null); // null | "approved" | "flagged"
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["comments", caseNumber],
@@ -28,9 +28,9 @@ export default function CommentsSection({ caseNumber }) {
 
   const mutation = useMutation({
     mutationFn: () => submitComment(caseNumber, { body: body.trim(), website }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       setBody("");
-      setSubmitted(true);
+      setSubmitted(res.status);
       qc.invalidateQueries({ queryKey: ["comments", caseNumber] });
     },
   });
@@ -76,12 +76,19 @@ export default function CommentsSection({ caseNumber }) {
       {/* Submission form */}
       {submitted ? (
         <div className="card p-4 text-center">
-          <p className="text-sm text-slate-200 font-semibold mb-1">Thanks — submitted for review</p>
-          <p className="text-xs text-slate-500">
-            Comments are reviewed by a moderator before appearing publicly.
-          </p>
+          {submitted === "approved" ? (
+            <p className="text-sm text-slate-200 font-semibold mb-1">Posted — thanks for sharing</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-200 font-semibold mb-1">Held for review</p>
+              <p className="text-xs text-slate-500">
+                Your comment may mention a person or contact info, so a moderator will
+                review it before it appears.
+              </p>
+            </>
+          )}
           <button
-            onClick={() => setSubmitted(false)}
+            onClick={() => setSubmitted(null)}
             className="mt-3 text-xs text-slate-400 hover:text-slate-200 underline"
           >
             Add another
@@ -92,9 +99,10 @@ export default function CommentsSection({ caseNumber }) {
           <p className="flex items-start gap-2 text-xs text-slate-500 leading-relaxed">
             <ShieldAlert size={14} className="shrink-0 mt-0.5 text-slate-600" />
             <span>
-              Anonymous and reviewed before publishing. Don't include names or other
-              identifying details about individuals. Community-submitted information is
-              not verified. If you witnessed a crime, contact UCPD at (209) 228-2677.
+              Anonymous — posts immediately. Don't include names or other identifying
+              details about individuals; comments that appear to are held for moderator
+              review. Community-submitted information is not verified. If you witnessed
+              a crime, contact UCPD at (209) 228-2677.
             </span>
           </p>
 

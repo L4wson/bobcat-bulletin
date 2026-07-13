@@ -6,6 +6,7 @@ import Header from "./components/Header.jsx";
 import FeedbackModal from "./components/FeedbackModal.jsx";
 import Home from "./pages/Home.jsx";
 import IncidentDetail from "./pages/IncidentDetail.jsx";
+import Admin from "./pages/Admin.jsx";
 
 export default function App() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -18,6 +19,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/incident/:caseNumber" element={<IncidentDetail />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
 
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}

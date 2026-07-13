@@ -112,7 +112,7 @@ Returns approved anonymous comments for an incident, oldest first. Pending and r
 
 ## `POST /api/incidents/{case_number}/comments`
 
-Submits an anonymous comment. Comments start as `pending` and only appear publicly after a moderator approves them. Rate limited to 5 per hour per IP. Body must be 10–1000 characters. Returns `404` if the case number is unknown.
+Submits an anonymous comment. Comments are screened for personal information (names, phone numbers, emails, social handles): clean comments are **auto-approved and publish immediately**; anything the screener catches is held as `flagged` for moderator review. Rate limited to 5 per hour per IP. Body must be 10–1000 characters. Returns `404` if the case number is unknown.
 
 ### Request Body
 
@@ -125,8 +125,10 @@ The optional `website` field is a honeypot — leave it empty (bots that fill it
 ### Response
 
 ```json
-{ "ok": true, "status": "pending" }
+{ "ok": true, "status": "approved" }
 ```
+
+`status` is `approved` (live immediately) or `flagged` (held for review).
 
 ---
 
@@ -138,13 +140,17 @@ Lists comments by moderation status. Requires the `X-Admin-Key` header.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `status` | string | `pending` | One of `pending`, `approved`, `rejected`. |
+| `status` | string | `flagged` | One of `flagged`, `approved`, `rejected`. |
+
+Each comment includes a `flags` array with the screener's reasons (e.g. `["phone number", "possible name"]`).
 
 ### Example
 
 ```bash
-curl -H "X-Admin-Key: $ADMIN_KEY" "http://localhost:8000/api/admin/comments?status=pending"
+curl -H "X-Admin-Key: $ADMIN_KEY" "http://localhost:8000/api/admin/comments?status=flagged"
 ```
+
+The moderation UI at `/admin` on the frontend wraps these endpoints.
 
 ---
 
