@@ -11,6 +11,9 @@ export const CATEGORY_COLORS = {
   Vandalism:    { bg: "bg-amber-500/15",  text: "text-amber-400",  border: "border-amber-500/40",  dot: "#f59e0b" },
   "Drug/Alcohol": { bg: "bg-cyan-500/15", text: "text-cyan-400",   border: "border-cyan-500/40",   dot: "#06b6d4" },
   "Lost/Found": { bg: "bg-teal-500/15",   text: "text-teal-400",   border: "border-teal-500/40",   dot: "#14b8a6" },
+  "Blue Light": { bg: "bg-sky-500/15",    text: "text-sky-400",    border: "border-sky-500/40",    dot: "#0ea5e9" },
+  Flagdown:     { bg: "bg-lime-500/15",   text: "text-lime-400",   border: "border-lime-500/40",   dot: "#84cc16" },
+  Assistance:   { bg: "bg-violet-500/15", text: "text-violet-400", border: "border-violet-500/40", dot: "#8b5cf6" },
   Other:        { bg: "bg-slate-500/15",  text: "text-slate-400",  border: "border-slate-500/40",  dot: "#64748b" },
 };
 

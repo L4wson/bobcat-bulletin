@@ -53,6 +53,38 @@ def scheduled_scrape():
 scheduler = BackgroundScheduler()
 
 
+def migrate_new_categories():
+    """Back-fill incidents that were stored as 'Other' before Blue Light,
+    Flagdown, and Assistance categories existed."""
+    with engine.begin() as conn:
+        conn.execute(text("""
+            UPDATE incidents SET category = 'Blue Light'
+            WHERE category = 'Other' AND (
+                lower(incident_type) LIKE '%blue light%' OR
+                lower(incident_type) LIKE '%call box%' OR
+                lower(incident_type) LIKE '%emergency phone%'
+            )
+        """))
+        conn.execute(text("""
+            UPDATE incidents SET category = 'Flagdown'
+            WHERE category = 'Other' AND (
+                lower(incident_type) LIKE '%flag down%' OR
+                lower(incident_type) LIKE '%flagdown%' OR
+                lower(incident_type) LIKE '%flagged down%'
+            )
+        """))
+        conn.execute(text("""
+            UPDATE incidents SET category = 'Assistance'
+            WHERE category = 'Other' AND (
+                lower(incident_type) LIKE '%citizen assist%' OR
+                lower(incident_type) LIKE '%animal%' OR
+                lower(incident_type) LIKE '%motorist assist%' OR
+                lower(incident_type) LIKE '%public assist%' OR
+                lower(incident_type) LIKE '%assist other%'
+            )
+        """))
+
+
 def migrate_comments_schema():
     """create_all doesn't alter existing tables, so add columns introduced
     after the comments table first shipped, and fold the retired 'pending'
@@ -69,6 +101,7 @@ def migrate_comments_schema():
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     migrate_comments_schema()
+    migrate_new_categories()
     startup_scrape()
     scheduler.add_job(scheduled_scrape, "interval", hours=SCRAPE_INTERVAL_HOURS, id="scrape")
     scheduler.start()

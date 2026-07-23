@@ -28,6 +28,9 @@ CATEGORY_MAP = [
     ("Drug/Alcohol", ["drug", "narcotic", "controlled substance", "marijuana", "alcohol",
                       "drunk", "intoxicat", "dui"]),
     ("Lost/Found",   ["lost", "found property"]),
+    ("Blue Light",   ["blue light", "call box", "emergency phone"]),
+    ("Flagdown",     ["flag down", "flagdown", "flagged down"]),
+    ("Assistance",   ["citizen assist", "animal", "motorist assist", "public assist", "assist other"]),
 ]
 
 
