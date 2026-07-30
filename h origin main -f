@@ -1,0 +1,358 @@
+[33mcommit 3a51cb37630e987877a02d1b0967ec329d4ac0c5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;32mbackup-before-attribution-strip-20260730145936[m[33m)[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Thu Jul 23 15:02:42 2026 -0700
+
+    few more filter types
+
+[33mcommit 5987b6bb2e09322a04148e2e9266b6f2ea168926[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Thu Jul 23 14:53:52 2026 -0700
+
+    readme
+
+[33mcommit cd8b2b30fe6b8b5099f08a5a4f3f483dcb75b9a9[m
+Merge: 63cb89a 1c4da6c
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 18:54:57 2026 -0700
+
+    Merge pull request #5 from L4wson/claude/bobcat-bulletin-anon-comments-e15c2c
+    
+    Add Vercel SPA rewrite so /admin and incident deep links load directly
+
+[33mcommit 1c4da6c0a033d0003ee2fe930a836e1304e2e6de[m[33m ([m[1;32mclaude/bobcat-bulletin-anon-comments-e15c2c[m[33m)[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 18:49:57 2026 -0700
+
+    Add Vercel SPA rewrite so client routes work on direct load
+    
+    Vercel had no rewrite config, so any deep link — /admin, /incident/... —
+    404'd unless reached by client-side navigation. Mirror the nginx SPA
+    fallback by rewriting all paths to index.html (static assets still win
+    because Vercel checks the filesystem first).
+
+[33mcommit 63cb89ab4b0e8a66b92e01f5cc9486b41b575fc0[m
+Merge: f05e3ac fe07d3e
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 18:35:38 2026 -0700
+
+    Merge pull request #4 from L4wson/claude/bobcat-bulletin-anon-comments-e15c2c
+    
+    Fix backend deploy workflow: build from the backend directory
+
+[33mcommit fe07d3ef7205b1b33dc960a1567b20eade5ab4fc[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 18:32:44 2026 -0700
+
+    Fix backend deploy workflow: build from backend directory
+    
+    The workflow deployed from the repo root, whose fly.toml pointed at
+    backend/Dockerfile with the repo root as build context — but that
+    Dockerfile COPYs requirements.txt relative to the context, so remote
+    builds failed with 'requirements.txt not found'. Deploy from backend/
+    (its fly.toml and Dockerfile agree on context) and delete the root
+    fly.toml, which was an otherwise-identical duplicate that only worked
+    as a trap.
+
+[33mcommit f05e3ac897065a436881ad31d8a509513421fda6[m
+Merge: 9fe4d7e eae13bf
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 18:28:00 2026 -0700
+
+    Merge pull request #3 from L4wson/claude/bobcat-bulletin-anon-comments-e15c2c
+    
+    Auto-approve comments with PII screening, admin moderation page, and backend auto-deploy
+
+[33mcommit eae13bfbbb175fba7a05672f401e3f4ac0484e56[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 18:20:04 2026 -0700
+
+    Add GitHub Actions workflow to auto-deploy backend to Fly.io
+    
+    Deploys on pushes to main that touch backend/** or fly.toml, so the
+    Fly app can no longer drift behind the frontend after a merge. Uses
+    --remote-only so the image builds on Fly's builders, and a concurrency
+    group so overlapping merges deploy serially. Requires a FLY_API_TOKEN
+    repo secret.
+
+[33mcommit bc7ed1ca0ab2dd653dc42ccef394b201eec197ac[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 18:17:40 2026 -0700
+
+    Auto-approve comments, flag personal info for review, add /admin page
+    
+    Comments now publish immediately unless a screener (backend/moderation.py)
+    detects personal information: emails, phone numbers, SSN-like numbers,
+    social handles, honorific+name, or likely person names via a common
+    first-name list. Matches are held as 'flagged' with the reasons stored,
+    replacing the hold-everything 'pending' flow; a startup migration adds
+    the flags column and converts existing pending rows.
+    
+    The new /admin page (unlinked route) gates on the admin key kept in
+    localStorage and provides Flagged/Live/Rejected/Feedback tabs: approve
+    or reject flagged comments, take down live ones, restore rejected ones,
+    and read feedback submissions.
+
+[33mcommit 9fe4d7e71c86a4db00dfd0392d3264ea665c9df0[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 17:21:35 2026 -0700
+
+    added packages
+
+[33mcommit d5b0491dd6c376838b173e97891040f51bca9f98[m
+Merge: 1bcc2b6 bbb43ad
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 16:42:00 2026 -0700
+
+    Merge pull request #2 from L4wson/claude/bobcat-bulletin-anon-comments-e15c2c
+    
+    Add incident detail pages and anonymous comments with moderation
+
+[33mcommit bbb43adba2aca28e7e2883eb8b5ce38a6884df7d[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 16:33:27 2026 -0700
+
+    Add anonymous comments with pre-publish moderation
+    
+    Visitors can anonymously share what they know about an incident from
+    its detail page. Comments are held as pending and only appear after a
+    moderator approves them via the admin API (X-Admin-Key), which guards
+    against spam, doxxing, and defamation on a public police-log site.
+    Submissions are rate limited (5/hour/IP), length-checked (10-1000
+    chars), and filtered by a honeypot field that silently discards bot
+    entries. New endpoints are documented in docs/api.md.
+
+[33mcommit aa9379a892ec6bf9e00896f485fb461404d918dd[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jul 12 16:16:17 2026 -0700
+
+    Add incident detail pages with related incidents
+    
+    Each incident card now links to /incident/{case_number}, a shareable
+    detail page showing full incident info, a copy-link button, and up to
+    six related incidents at the same location within 30 days. Backend
+    gains GET /api/incidents/{case_number}; frontend adds react-router-dom
+    with a Home page extracted from App and shared date/time formatters.
+
+[33mcommit 1bcc2b65f112b2167634834c8ee1c15ef19777ab[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jun 14 17:44:43 2026 -0700
+
+    Switch scraper to curl-cffi to bypass Akamai TLS fingerprint check
+    
+    Akamai blocks requests and Playwright because their TLS handshakes differ
+    from real Chrome. curl-cffi impersonates Chrome's exact TLS fingerprint
+    (JA3/JA3S + HTTP/2 settings), passing Akamai's bot detection reliably.
+
+[33mcommit 8b06eaa2bebf845fa20f1225ca7136edf2554b69[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jun 14 17:10:38 2026 -0700
+
+    Switch scraper to Playwright to bypass Akamai bot protection
+    
+    requests is blocked by Akamai for all data center IPs (Fly.io + GitHub
+    Actions). Playwright runs a real Chromium browser which passes Akamai's
+    JavaScript challenge. Updated workflow to install Playwright + Chromium.
+
+[33mcommit f95282012fdb9b220248504d1a37d8bc3847fed4[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Sun Jun 14 16:31:49 2026 -0700
+
+    Add GitHub Actions scraping to bypass Akamai bot protection
+    
+    - Add /api/incidents/bulk endpoint for external scrapers to push data
+    - Add enhanced browser headers to scraper.py to mimic real browsers
+    - Add scripts/scrape_and_push.py: standalone scraper that runs from
+      GitHub Actions IPs (not blocked like Fly.io) and pushes to the API
+    - Add .github/workflows/scheduled-scrape.yml: runs twice daily at
+      8am and 8pm PST via cron, with manual trigger support
+
+[33mcommit d5a00914147089a810dab0b14be7517426ce6cf5[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Thu May 21 23:39:28 2026 -0700
+
+    Fix date inputs: hide labels on desktop, prevent mobile overflow
+
+[33mcommit ab71bfc6336577049ef95845cfedb0b3129d9c6a[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Thu May 21 23:29:45 2026 -0700
+
+    Add From/To labels to date range inputs in filter drawer
+
+[33mcommit 07dea258c473b6c8723a350bdde3f7611255d6b4[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Thu May 21 23:16:25 2026 -0700
+
+    Move search bar below stats on mobile, out of filter drawer
+
+[33mcommit e9b234b5084607e402c20cc5a4734db96e750ea2[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Thu May 21 00:09:45 2026 -0700
+
+    Display last updated time in PST instead of UTC
+
+[33mcommit e65fcc2eabeb78ee16302876ce5975832259c4f4[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Wed May 20 09:46:06 2026 -0700
+
+    Switch to inject() API for Vercel Analytics with explicit production mode
+
+[33mcommit 8f5ea50a084080314f3bc372589065ae0c3550c3[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Wed May 20 09:36:10 2026 -0700
+
+    Force Vercel Analytics production mode
+
+[33mcommit aa461317db4f459f2c8e242830a855fd4d14625c[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Wed May 20 09:32:25 2026 -0700
+
+    Fix Vercel Analytics sending real events in production
+
+[33mcommit 12058459102de42689e149f2a3689380340b8c9d[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Wed May 20 01:23:01 2026 -0700
+
+    Add Assault category, convert times to local 12-hour format
+    
+    - Split assault/battery/fight out of Disturbance into their own Assault category
+    - Add /api/recategorize admin endpoint to backfill existing DB rows
+    - Convert incident times from Pacific to user's local timezone using Intl API
+    - Display times in 12-hour format (e.g. 2:30 PM)
+
+[33mcommit ec35a54eaeb92e5a0104c037649a0fca18630003[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Wed May 20 00:48:38 2026 -0700
+
+    Add paw print favicon
+
+[33mcommit c662eab7c21c0d9612a8dce62dabb1e235b61743[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.github.com>
+Date:   Wed May 20 00:20:38 2026 -0700
+
+    Trigger Vercel redeploy
+
+[33mcommit 00d129f241641931fb89eb9ce70785baa0ffd48d[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Wed May 20 00:16:28 2026 -0700
+
+    Add Vercel Analytics
+
+[33mcommit 958bc44c51c1255d3a392c7c861894f2c364324a[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 21:59:59 2026 -0700
+
+    Add in-app feedback form replacing GitHub issues link
+
+[33mcommit f594596a6e6c48e062ff428d6737049a71338542[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 21:47:49 2026 -0700
+
+    Add backend/fly.toml for Fly.io deployment from correct build context
+
+[33mcommit 7b57eeab4422e4377566eb944f1a8635f7e0ada4[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 19:39:57 2026 -0700
+
+    Redesign UI as amber CRT terminal (Fallout NV style)
+    
+    Security (Phase 1):
+    - Rate limiting via slowapi: 60/min incidents, 20/min categories,
+      30/min stats, 120/min health
+    - POST /api/scrape now requires X-Admin-Key header (403 without it)
+    - CORS restricted to ALLOWED_ORIGINS env var (no more wildcard)
+    - Search query capped at max_length=200
+    - Frontend Refresh button no longer calls the scrape endpoint —
+      it only invalidates the React Query cache
+    
+    Deployment (Phase 1):
+    - Frontend Dockerfile replaced with two-stage nginx production build
+      (was running Vite dev server — not suitable for prod traffic)
+    - nginx.conf added for SPA routing + asset caching
+    - fly.toml added for Fly.io backend deployment (sjc region, 256MB VM,
+      persistent volume mount at /data)
+    - docker-compose.yml updated with ALLOWED_ORIGINS, ADMIN_KEY env vars;
+      frontend now serves on port 5173→80 via nginx
+    
+    Mobile & shareability (Phase 2):
+    - useFilterState hook: syncs all filters to window.location.search so
+      every filtered view is a shareable URL (?category=Medical&search=...)
+    - useLocalStorage hook: persists selected category and exclude_types
+      across sessions so preferences survive page reload
+    - MobileFilterDrawer: bottom-sheet drawer with FAB (fixed bottom-right,
+      sm:hidden) that slides up to reveal the full FilterBar on phones
+    
+    API additions:
+    - GET /api/trends?days=N returns daily incident counts by category,
+      used by upcoming TrendsPanel
+
+[33mcommit 86e562cafc7827682d2194c697ec7361897830e3[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 19:22:10 2026 -0700
+
+    Fix spurious '0' in filter bar when no filters active
+    
+    exclude_types?.length returns 0 for an empty array, and 0 && <jsx>
+    renders the literal string "0" in React. Coerce hasFilters to boolean.
+
+[33mcommit 2009f32f8465c744e17bf38f4ecef354ce751508[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 19:16:49 2026 -0700
+
+    Fix frontend build and Header JSX fragment
+    
+    - Add .dockerignore to exclude node_modules from build context,
+      fixing EACCES crash on container start
+    - Wrap Header return in a Fragment so HelpModal renders alongside
+      the header without a JSX sibling error
+
+[33mcommit 27fd67f133c82c12de62c9b1253380a65921cfa8[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 19:06:49 2026 -0700
+
+    Add help modal, footer feedback link, and GitHub issue templates
+    
+    - Info icon (ⓘ) in header opens a how-to-use modal covering search,
+      filters, date range, type exclusion, report numbers, and refresh
+    - Footer feedback link routes to GitHub Issues with two structured
+      templates: information removal requests and general suggestions
+    - Escape key and backdrop click dismiss the modal
+
+[33mcommit 4232c5eff7585f23faccb6425f631b5454798658[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 18:48:21 2026 -0700
+
+    Redesign UI as amber CRT terminal (Fallout NV style)
+    
+    - Phosphor amber color palette replacing the dark blue theme
+    - CRT scanline overlay via repeating-gradient fixed div
+    - Radial vignette darkening the screen edges
+    - Subtle full-page flicker animation
+    - VT323 display font for headers/stats, Share Tech Mono for body
+    - Phosphor glow text-shadow on key elements
+    - All cards, buttons, chips, inputs restyled as terminal widgets
+    - Bracket notation [CATEGORY], prompt > prefixes, UPPERCASE labels
+    - Monochrome amber category system (intensity reflects severity)
+    - Terminal-styled modals for info and feedback
+
+[33mcommit 6372a04830a338621041682119044934c31d17f5[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 18:33:56 2026 -0700
+
+    Add info modal and feedback link
+    
+    - CircleHelp icon in header opens a how-to-use modal covering search,
+      category filters, exclude types, date range, report numbers, and
+      live update cadence
+    - Footer link opens a feedback modal with three modes: Suggestion,
+      Question, and Remove info — composes a mailto on submit
+
+[33mcommit c01889041b9b7372b2c1b142d63664661e89ce41[m
+Author: Jacob Lawson <84114068+L4wson@users.noreply.gitub.com>
+Date:   Tue May 19 18:26:25 2026 -0700
+
+    Initial release of Bobcat Bulletin
+    
+    Real-time UC Merced campus activity dashboard that scrapes and
+    displays police daily activity logs. Features dark-mode UI, category
+    filtering, incident type exclusion, full-text + report number search,
+    date range filtering, and automatic 6-hour data refresh.
