@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { getStats } from "./lib/api.js";
 import Header from "./components/Header.jsx";
 import FeedbackModal from "./components/FeedbackModal.jsx";
@@ -23,6 +24,8 @@ export default function App() {
       </Routes>
 
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
+
+      <SpeedInsights />
 
       <footer className="border-t border-surface-600 mt-12 py-6 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
